@@ -971,6 +971,7 @@ const SHOP = [
   {id:'gestasis', n:'Gran Cápsula de Estasis', p:300, ic:'hourglass', d:'Lo mismo, hasta 14 días.', kind:'estasis', days:14, cd:180},
   {id:'dxp', n:'Pergamino de Doble XP', p:40, ic:'scroll-quill', d:'Doble XP durante un día.', kind:'dxp'},
   {id:'ess5', n:'Saco de Esencia', p:30, ic:'chemical-drop', d:'5 de Esencia para la forja.', kind:'ess'},
+  {id:'recuerdo', n:'Pergamino del Recuerdo', p:50, ic:'scroll-unfurled', d:'Para olvidos gordos: te deja marcar un día de hasta 7 días atrás. Se usa desde Hoy. Uno por semana.', kind:'bag1'},
   {id:'cofre', n:'Cofre del Mercader', p:60, ic:'locked-chest', d:'Una pieza al azar según tu rango. Máximo 2 por semana.', kind:'chest'},
   {id:'elixir', n:'Elixir de Concentración', p:100, ic:'round-potion', d:'+1 uso para una runa agotada esta semana. Se usa desde la ficha de la runa.', kind:'bag1'},
   {id:'incienso', n:'Incienso de Sombras', p:60, ic:'flame', d:'Durante 24 h, tus sombras farmean el doble. Se enciende al comprarlo.', kind:'incense'},
@@ -1173,8 +1174,8 @@ const wstart = k => addD(k, 1-dow(k));
 const diffD = (a,b) => Math.round((dparse(b)-dparse(a))/864e5);
 let NOW = () => new Date();
 const DMG_SCALE = 10;
-// Día ya cerrado: ayer se puede marcar hasta las 12:00
-const settled = () => NOW().getHours() < 12 ? addD(today(),-2) : addD(today(),-1);
+// Día ya cerrado: lo de ayer se puede marcar durante todo el día siguiente
+const settled = () => addD(today(),-2);
 const today = () => dkey(NOW());
 const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
@@ -2376,8 +2377,23 @@ function rewardSheet(){
     <div class="row" style="flex-wrap:wrap; margin-top:14px"><button class="btn primary gold" data-act="rwsave">Guardar</button>${isNew?'':`<button class="btn red" data-act="rwdel">Borrar</button>`}</div>`;
 }
 
+// ---- Pergamino del Recuerdo ----
+function recallBar(d){
+  if (S.recall && S.recall.on===today() && d===S.recall.d) return `<div class="win vio" style="margin:6px 0"><div class="spread"><span class="small">${ic('scroll-unfurled')} Pergamino del Recuerdo: estás marcando el <b>${esc(dLabel(d))}</b>.</span><button class="btn sm" data-act="recallback">Volver a hoy</button></div></div>`;
+  if (d===today() && S.bag.recuerdo>0) return `<div class="row" style="margin:4px 2px 8px"><button class="btn sm vio" data-act="recall">${ic('scroll-unfurled')}Usar Pergamino del Recuerdo · tienes ${S.bag.recuerdo}</button></div>`;
+  return '';
+}
+function recallSheet(){
+  const t = today(); const days = []; for (let i=2;i<=7;i++){ const d = addD(t,-i); if (d >= S.start) days.push(d); }
+  const used = weekUses(S,'recuerdo')>=1;
+  return `<h3>Pergamino del Recuerdo</h3><p class="small muted">Elige el día que quieres marcar (de hace 2 a 7 días). Lo de ayer ya se puede marcar sin pergamino. Se gasta al elegir el día y solo puedes usar uno por semana.</p>
+    ${used?'<p class="small" style="color:var(--red)">Ya usaste uno esta semana.</p>':''}
+    <div class="steam">${days.length?days.map(d=>{ const n = DAILY.filter(h=>done(S,d,h.id)).length; return `<button class="schip" data-act="recallgo" data-v="${d}" ${used?'disabled':''}><span><b>${esc(dLabel(d))}</b><small>${n} de ${DAILY.length} diarios marcados</small></span></button>`; }).join(''):'<p class="small muted">No hay días disponibles todavía.</p>'}</div>
+    <p class="tiny" style="margin-top:10px">Ojo: si ese día ya cerró la semana de su jefe o una sombra perdió rango por él, eso no cambia. Sí cuentan la XP, las rachas y la sala.</p>`;
+}
+
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '1.7.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '1.8.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -2440,7 +2456,8 @@ function toast(html, cls=''){ const t = document.createElement('div'); t.classNa
 function render(){
   const app = $('#app');
   if (!S) { app.innerHTML = onboarding(); return; }
-  if (!VIEWDAY || (VIEWDAY !== today() && VIEWDAY !== addD(today(),-1)) || (VIEWDAY !== today() && NOW().getHours() >= 12)) VIEWDAY = today();
+  const recallOk = S.recall && S.recall.on===today() && VIEWDAY===S.recall.d;
+  if (!VIEWDAY || (VIEWDAY !== today() && VIEWDAY !== addD(today(),-1) && !recallOk)) VIEWDAY = today();
   const body = TAB==='hoy' ? screenHoy() : TAB==='puerta' ? screenPuerta() : TAB==='sombras' ? screenSombras() : TAB==='equipo' ? screenEquipo() : screenTienda();
   app.innerHTML = hud() + `<main id="main">${body}</main>` + nav();
   maybeMissionAlert();
@@ -2502,7 +2519,7 @@ function hoyTabs(){
   return `<div class="seg subtabs" role="group" aria-label="Misiones"><button data-act="hoyt" data-v="dia" aria-pressed="${HOYT==='dia'}">${ic('sundial')}Día</button><button data-act="hoyt" data-v="semana" aria-pressed="${HOYT==='semana'}">${ic('crossed-swords')}Semana${pend?` <span class="badge">${pend}</span>`:''}</button></div>`;
 }
 function dayToggle(){
-  const t = today(), y = addD(t,-1), d = VIEWDAY; const canY = NOW().getHours() < 12 && y >= S.start;
+  const t = today(), y = addD(t,-1), d = VIEWDAY; const canY = y >= S.start;
   return canY ? `<div class="seg" role="group"><button data-act="vday" data-v="${y}" aria-pressed="${d===y}">Ayer</button><button data-act="vday" data-v="${t}" aria-pressed="${d===t}">Hoy</button></div>` : '';
 }
 function weekLabel(ws){ const a = dparse(ws), b = dparse(addD(ws,6));
@@ -2524,7 +2541,7 @@ function screenSemana(){
   html += `<section class="win"><div class="wh">${ic('scroll-unfurled')}<h2>Diarios de la semana</h2></div>
     <div class="wk wk-head"><span></span>${['L','M','X','J','V','S','D'].map(c=>`<i>${c}</i>`).join('')}<span>Daño</span></div>
     ${DAILY.map(h=>{ let n=0; const dots = days.map(dd=>{ let c='ko';
-        if (dd < S.start) c='off'; else if (done(S,dd,h.id)) { c='ok'; n++; } else if (isProtected(S,dd,h.id)) c='pr'; else if (dd > t) c='fut'; else if (dd===t || (dd===addD(t,-1) && NOW().getHours()<12)) c='now';
+        if (dd < S.start) c='off'; else if (done(S,dd,h.id)) { c='ok'; n++; } else if (isProtected(S,dd,h.id)) c='pr'; else if (dd > t) c='fut'; else if (dd===t || dd===addD(t,-1)) c='now';
         return `<i class="${c}"></i>`; }).join('');
       return `<div class="wk"><span class="wk-n" style="--stc:${STAT_INFO[h.s].c}">${ic(h.ic)}<span><b>${esc(h.n)}</b><small>${n} de 7 días</small></span></span>${dots}<span class="wk-d">${agg[h.id]?nf(agg[h.id]):'—'}</span></div>`; }).join('')}
     <div class="spread small" style="margin-top:10px; padding-top:8px; border-top:1px solid var(--line)"><span>Daño de los diarios: <b style="color:var(--red)">${nf(dDaily)}</b></span><span>De los cupos: <b style="color:var(--gold)">${nf(dWeekly)}</b></span></div>
@@ -2544,12 +2561,12 @@ function minionHead(m){
 function screenHoy(){
   const d = VIEWDAY, t = today();
   if (S.start > t) return `<div class="sys-title"><h1>Misión diaria</h1></div><div class="win"><p>Tu primera Puerta se abre el <b>${dLabel(S.start)}</b>. Hasta entonces, el Sistema espera.</p></div>`;
-  const y = addD(t,-1); const canY = NOW().getHours() < 12 && y >= S.start;
+  const y = addD(t,-1); const canY = y >= S.start;
   const dy = dayR(S,d) || {c:{}, sub:{}, sh:{}};
   const est = inEstasis(S,d);
   if (HOYT==='semana') return screenSemana();
   let html = hoyTabs() + `<div class="sys-title"><h1>Misión diaria</h1>${canY?`<div class="seg" role="group"><button data-act="vday" data-v="${y}" aria-pressed="${d===y}">Ayer</button><button data-act="vday" data-v="${t}" aria-pressed="${d===t}">Hoy</button></div>`:''}</div>
-    <div class="sub muted small" style="margin:0 2px 6px">${dLabel(d)}${d===y?' · puedes marcarlo hasta las 12:00':''}</div>`;
+    <div class="sub muted small" style="margin:0 2px 6px">${dLabel(d)}${d===y?' · puedes marcarlo hasta el final de hoy':''}</div>${recallBar(d)}`;
   const chips = [];
   if (est) chips.push(`<span class="chip" style="color:var(--vio)">${ic('hourglass')}Estasis: Misión de Viaje</span>`);
   if (dy.frz) chips.push(`<span class="chip" style="color:var(--sys)">${ic('snowflake-1')}Día congelado</span>`);
@@ -3017,7 +3034,7 @@ function act(name, v, el){
     case 'hoyt': HOYT = v; render(); break;
     case 'gatet': GATET = v; render(); if (v==='puerta') gateReplay(); break;
     case 'tg': doToggle(v); break;
-    case 'sub': { const r = toggleSub(S, VIEWDAY, v, el.dataset.v); if (r.err) return toast(r.err,'red'); const ev = tick(S); save(); render(); if (r.gained) floatAt(document.querySelector(`[data-act="sub"][data-h="${v}"][data-v="${el.dataset.v}"]`), '+'+r.gained+' XP', 'xp'); handleEvents(ev); break; }
+    case 'sub': { const hid = el.dataset.h; const r = toggleSub(S, VIEWDAY, hid, el.dataset.v); if (r.err) return toast(r.err,'red'); const ev = tick(S); save(); render(); if (r.gained) floatAt(document.querySelector(`[data-act="sub"][data-h="${hid}"][data-v="${el.dataset.v}"]`), '+'+r.gained+' XP', 'xp'); handleEvents(ev); break; }
     case 'all': { const d = VIEWDAY; const ws = wstart(d); const b0 = battle(S,ws); let xp = 0; const m0 = minionsOf(S,d);
       for (const h of DAILY.filter(h=>h.b===v)) if (!done(S,d,h.id) && canCheck(S,d,h.id).ok) { const r = toggle(S,d,h.id); xp += r.gained||0; }
       const b1 = battle(S,ws); const ev = tick(S); save(); render(); const blk = document.querySelector(`[data-act="all"][data-v="${v}"]`);
@@ -3072,6 +3089,10 @@ function act(name, v, el){
     case 'mdec': { const m = todayMission(S); if (m && m.st==='new') { m.st = 'declined'; save(); } const a = $('#malert'); if (a) a.remove(); render(); break; }
     case 'mdone': { const m = todayMission(S); if (m && m.st==='accepted' && !MISSION[m.id].auto) { const l = completeMission(S, m); save(); render(); QUEUE.unshift({type:'mission', m, loot:l}); showNext(); } break; }
     case 'sht': SHT = v; render(); break;
+    case 'recall': openSheet(recallSheet()); break;
+    case 'recallgo': { if (!(S.bag.recuerdo>0)) return toast('No tienes Pergamino del Recuerdo','red'); if (weekUses(S,'recuerdo')>=1) return toast('Ya usaste uno esta semana','red');
+      S.bag.recuerdo--; (S.uses.recuerdo = S.uses.recuerdo||[]).push(today()); S.recall = {d:v, on:today()}; VIEWDAY = v; TAB = 'hoy'; HOYT = 'dia'; save(); closeSheet(); render(); scrollTo({top:0}); toast('<b>Recuerdo</b> Estás marcando el '+esc(dLabel(v))+'.', 'vio'); break; }
+    case 'recallback': VIEWDAY = today(); render(); break;
     case 'achs': openSheet(achSheet()); break;
     case 'stat': openSheet(statSheet(v)); break;
     case 'looks': openSheet(lookSheet()); break;
