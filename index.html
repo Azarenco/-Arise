@@ -629,6 +629,14 @@ main{padding:4px 14px 20px}
 .icgrid{display:grid; grid-template-columns:repeat(8, minmax(0,1fr)); gap:6px; margin-top:8px}
 .icpick{aspect-ratio:1; display:grid; place-items:center; font-size:22px; border:1px solid var(--line); color:var(--tx2); background:var(--panel)}
 .icpick.on{border-color:var(--gold); color:var(--gold); box-shadow:0 0 10px color-mix(in srgb, var(--gold) 40%, transparent)}
+
+.dstrip{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:12px}
+.dcell{display:flex; flex-direction:column; align-items:center; gap:3px}
+.dcell small{font-size:10.5px; color:var(--tx3)}
+.dcell i{display:block; width:100%; max-width:22px; height:0; min-height:0; border-radius:2px 2px 0 0; box-shadow:0 0 6px var(--glow)}
+.dcell{height:80px; justify-content:flex-end} .dcell small{order:3} .dcell b{order:2} .dcell i{order:1} .dcell b{font-size:10px; font-variant-numeric:tabular-nums; color:var(--tx2)}
+.dcell.fut b, .dcell.off b{color:var(--tx3)}
+.dcell i{flex:none; max-height:44px}
 </style>
 </head>
 <body>
@@ -1790,24 +1798,24 @@ function mobKills(s){ let n=0; for (const d in s.days) { if (d < s.start || inEs
 
 // ---- Crónica semanal ----
 function weekSummary(s, ws){
-  const w = s.weeks[ws]; const t = today(); let dExp=0, dDone=0, rooms=0, xp=0, act=0, actTot=0;
+  const w = s.weeks[ws]; const t = today(); let dDone=0, rooms=0, xp=0, act=0, actTot=0; const days = [];
   const cur = ws === wstart(t) && !(w && w.resolved);
-  for (let i=0;i<7;i++){ const d = addD(ws,i); if (d < s.start || inEstasis(s,d)) continue; actTot++; if (d > t) continue; act++;
-    // el sueño de hoy se marca mañana: no se espera todavía
-    const hs = (d===t) ? DAILY.filter(h=>h.id!=='sueno') : DAILY;
-    dExp += hs.length; dDone += hs.filter(h=>done(s,d,h.id)).length; if (roomClear(s,d)) rooms++;
+  for (let i=0;i<7;i++){ const d = addD(ws,i); if (d < s.start || inEstasis(s,d)) { days.push(null); continue; } actTot++;
+    if (d > t) { days.push({d, pct:null}); continue; } act++;
+    const n = DAILY.filter(h=>done(s,d,h.id)).length; dDone += n; if (roomClear(s,d)) rooms++;
+    days.push({d, pct: Math.round(n/DAILY.length*100)});
     const dy = dayR(s,d); if (dy) { xp += Object.values(dy.xp).reduce((a,b)=>a+b,0) + ((dy.bonus && dy.bonus.xp)||0); } }
   let qExp=0, qDone=0; for (const h of WEEKLY) { const q = quotaFor(s,ws,h); qExp += q; qDone += Math.min(q, weekCount(s,ws,h.id)); }
-  // semana en curso: los cupos se esperan en proporción a los días que han pasado
-  const qExpNow = cur && actTot ? qExp*act/actTot : qExp;
+  // Porcentaje fijo sobre el total de la semana: diarios de todos los días activos + cupos
+  const total = DAILY.length*actTot + qExp; const doneN = dDone + qDone;
   const b = w ? battle(s, ws) : null;
-  const pct = (dExp+qExpNow) ? Math.min(100, Math.round((dDone+qDone)/(dExp+qExpNow)*100)) : 0;
+  const pct = total ? Math.min(100, Math.round(doneN/total*100)) : 0;
   let result = 'curso';
   if (w && w.special==='horda') result = 'horda';
   else if (b && b.allDead) result = 'muerto';
   else if (w && w.resolved) result = 'escapo';
   const deadOn = b && b.allDead ? b.bosses.map(x=>x.deadOn).sort().pop() : null;
-  return {ws, w, b, pct, cur, dDone, dExp, qDone, qExp, rooms, act, xp, result, deadOn, perfect: w && w.resolved && weekPerfect(s,ws)};
+  return {ws, w, b, pct, cur, doneN, total, days, dDone, qDone, qExp, rooms, act, xp, result, deadOn, perfect: w && w.resolved && weekPerfect(s,ws)};
 }
 
 // ---- Tick general ----
@@ -2369,7 +2377,7 @@ function rewardSheet(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '1.7.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '1.7.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -2693,6 +2701,9 @@ function screenRoja(){
     <section class="win red"><p class="small" style="margin:0">Sin escudos ni congeladores. Recompensa: 200 de oro, pieza legendaria garantizada, un 15 % de la mítica de tu clase, 3 Fragmentos de Sombra y el título «${esc(TITLES.roja)}».</p>
     ${r.ok||r.over?`<button class="btn primary red wide" style="margin-top:12px" data-act="redend">${r.ok?'Reclamar botín':'Cerrar la Puerta'}</button>`:''}</section>`;
 }
+function shortWeek(ws){ const a = dparse(ws), b = dparse(addD(ws,6)); const m = x => MON[x.getMonth()].slice(0,3);
+  return a.getMonth()===b.getMonth() ? `${a.getDate()}-${b.getDate()} ${m(b)}` : `${a.getDate()} ${m(a)}-${b.getDate()} ${m(b)}`; }
+function dayStrip(x){ return `<div class="dstrip">${x.days.map((d,i)=>`<div class="dcell ${!d?'off':d.pct===null?'fut':''}"><small>${'LMXJVSD'[i]}</small><i style="height:${d&&d.pct!==null?Math.max(3,Math.round(d.pct*0.44)):0}px; background:${d&&d.pct===100?'var(--gold)':'var(--sys)'}"></i><b>${d&&d.pct!==null?d.pct+'%':'·'}</b></div>`).join('')}</div>`; }
 function screenCronica(){
   const t = today(); const weeks = Object.keys(S.weeks).filter(ws=>ws<=t && addD(ws,6)>=S.start).sort().reverse();
   if (!weeks.length) return `<div class="win"><div class="empty">Tu crónica empieza con tu primera Puerta.</div></div>`;
@@ -2705,7 +2716,7 @@ function screenCronica(){
   <section class="win"><div class="chron-stats">
     <div><b>${sums.length}</b><small>${sums.length===1?'semana':'semanas'}</small></div><div><b>${kills}</b><small>jefes derrotados</small></div>
     <div><b>${perf}</b><small>${perf===1?'semana perfecta':'semanas perfectas'}</small></div><div><b>${avg===null?'—':avg+' %'}</b><small>media cerrada</small></div></div>
-    <div class="chron-chart" role="img" aria-label="Cumplimiento de las últimas semanas">${last.map(x=>`<div class="cbar"><span class="cv">${x.pct}%</span><i style="height:${Math.max(4,x.pct)}%; background:${col(x)}; box-shadow:0 0 10px ${col(x)}"></i><small>${dparse(x.ws).getDate()} ${MON[dparse(x.ws).getMonth()].slice(0,3)}</small></div>`).join('')}</div>
+    <div class="chron-chart" role="img" aria-label="Cumplimiento de las últimas semanas">${last.map(x=>`<div class="cbar"><span class="cv">${x.pct}%</span><i style="height:${Math.max(4,x.pct)}%; background:${col(x)}; box-shadow:0 0 10px ${col(x)}"></i><small>${shortWeek(x.ws)}</small></div>`).join('')}</div>
     <div class="chips" style="margin-top:8px; justify-content:center"><span class="chip"><i class="lg" style="background:var(--gold)"></i>Jefe derrotado</span><span class="chip"><i class="lg" style="background:var(--red)"></i>Escapó</span><span class="chip"><i class="lg" style="background:var(--sys)"></i>En curso</span></div></section>`;
   for (const x of sums) { const w = x.w; const th = w.event ? EVENTS[w.event] : THEMES[w.theme] || THEMES.gris; const bo = w.bosses[0] && BOSS[w.bosses[0].id];
     const res = x.result==='muerto' ? `<span class="chip" style="color:var(--gold)">Derrotado el ${DOWN[dparse(x.deadOn).getDay()]}</span>` : x.result==='escapo' ? `<span class="chip" style="color:var(--red)">Escapó</span>` : x.result==='horda' ? `<span class="chip" style="color:var(--vio)">Horda</span>` : `<span class="chip" style="color:var(--sys)">En curso</span>`;
@@ -2715,7 +2726,8 @@ function screenCronica(){
         <div class="rname" style="--rc:var(--tx); font-size:15px">${bo?esc(bo.n):'Puerta de Horda'}${w.bosses.length>1?' y otro':''}</div>
         <div class="tiny">${esc(th.n)}${w.special&&SPECIALS[w.special]?' · '+esc(SPECIALS[w.special].n):''}${w.bosses[0]&&w.bosses[0].fug?' · Jefe Fugado':''}</div>
         <div class="chips" style="margin-top:6px">${res}</div></div></div>
-      <div class="chron-grid"><div><b>${x.pct} %</b><small>${x.cur?'a tu ritmo':'cumplido'}</small></div><div><b>${x.rooms}/${x.act}</b><small>salas limpias</small></div><div><b>${x.qDone}/${x.qExp}</b><small>cupos</small></div><div><b>${nf(x.xp)}</b><small>XP</small></div></div>
+      ${x.cur ? dayStrip(x) : ''}
+      <div class="chron-grid"><div><b>${x.pct} %</b><small>${x.doneN}/${x.total} tareas</small></div><div><b>${x.rooms}/${x.act}</b><small>salas limpias</small></div><div><b>${x.qDone}/${x.qExp}</b><small>cupos</small></div><div><b>${nf(x.xp)}</b><small>XP</small></div></div>
       <div class="hp" style="margin-top:8px"><i style="width:${x.b?Math.min(100,x.b.dealt/x.b.total*100):0}%"></i><span>${x.b?nf(x.b.dealt)+' / '+nf(x.b.total)+' de daño':''}</span></div>
       ${w.lootItems&&w.lootItems.length?`<div class="chips" style="margin-top:8px">${w.lootItems.map(id=>{ const it = ITEMS[id]; return `<span class="chip" style="color:var(--c-${it.r})">${ic(itemIcon(it))}${esc(it.n)}</span>`; }).join('')}</div>`:''}
     </section>`; }
