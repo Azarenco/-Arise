@@ -1633,20 +1633,20 @@ function processShadows(s, events){
     const sh = s.shadows[hid]; if (!sh.ext) continue; const h = HB[hid];
     if (!h.w) {
       let d = sh.proc ? addD(sh.proc,1) : addD(sh.extAt,1);
-      while (d <= y) { if (!habitDoneOrProt(s,d,hid)) { if (sh.dorm) {} else if (sh.rank>0) { sh.best = Math.max(sh.best||0, sh.rank); sh.rank--; sh.recBase = sh.rank; events.push({type:'shDown', hid}); } else { sh.best = Math.max(sh.best||0, 0); sh.dorm = true; events.push({type:'shDorm', hid}); } } sh.proc = d; d = addD(d,1); }
+      while (d <= y) { if (!habitDoneOrProt(s,d,hid)) { if (!sh.dorm) { sh.dorm = true; events.push({type:'shDorm', hid}); } } sh.proc = d; d = addD(d,1); }
     } else {
       let ws = sh.proc ? addD(sh.proc,7) : addD(wstart(sh.extAt),7); const cur = wstart(addD(y,1));
-      while (ws < cur) { if (quotaFor(s,ws,h)>0 && !weekMet(s,ws,h)) { if (sh.dorm) {} else if (sh.rank>0) { sh.best = Math.max(sh.best||0, sh.rank); sh.rank--; sh.recBase = sh.rank; events.push({type:'shDown', hid}); } else { sh.best = Math.max(sh.best||0, 0); sh.dorm = true; events.push({type:'shDorm', hid}); } } sh.proc = ws; ws = addD(ws,7); }
+      while (ws < cur) { if (quotaFor(s,ws,h)>0 && !weekMet(s,ws,h)) { if (!sh.dorm) { sh.dorm = true; events.push({type:'shDorm', hid}); } } sh.proc = ws; ws = addD(ws,7); }
     }
     const days = h.w ? streakWeeks(s,hid)*7 : streakDaily(s,hid);
-    if (sh.dorm && days >= 7) { sh.dorm = false; sh.rank = 0; sh.recBase = 0; events.push({type:'shWake', hid}); }
-    if (!sh.dorm) { let r = 0; SH_DAYS.forEach((v,i)=>{ if (days>=v) r=i; });
-      // Recuperación: cada 21 días seguidos recupera un rango, hasta su mejor rango
-      if ((sh.best||0) > sh.rank) r = Math.max(r, Math.min(sh.best, (sh.recBase||0) + Math.floor(days/21)));
-      if (r > sh.rank) { sh.rank = r; events.push({type:'shUp', hid, rank:r}); } }
+    // Congelada: conserva su rango y se descongela con 21 días seguidos (7 si es Soldado)
+    if (sh.best > sh.rank) { sh.rank = sh.best; } delete sh.best; delete sh.recBase;
+    if (sh.dorm && days >= thawNeed(sh)) { sh.dorm = false; events.push({type:'shWake', hid}); }
+    if (!sh.dorm) { let r = 0; SH_DAYS.forEach((v,i)=>{ if (days>=v) r=i; }); if (r > sh.rank) { sh.rank = r; events.push({type:'shUp', hid, rank:r}); } }
   }
 }
-function shRecovery(s, hid){ const sh = s.shadows[hid]; if (!sh || !sh.ext || sh.dorm || !((sh.best||0) > sh.rank)) return null; const h = HB[hid]; const days = h.w ? streakWeeks(s,hid)*7 : streakDaily(s,hid); return {best:sh.best, cur: days % 21, need:21}; }
+const thawNeed = sh => sh.rank > 0 ? 21 : 7;
+function shThaw(s, hid){ const sh = s.shadows[hid]; if (!sh || !sh.ext || !sh.dorm) return null; const h = HB[hid]; const days = h.w ? streakWeeks(s,hid)*7 : streakDaily(s,hid); const need = thawNeed(sh); return {cur: Math.min(days, need), need}; }
 function canExtract(s, hid){ const sh = s.shadows[hid]; if (sh && sh.ext) return false; const p = shadowProgress(s,hid); return p.cur >= p.need; }
 function extract(s, hid){
   if (!canExtract(s,hid)) return false;
@@ -2417,7 +2417,7 @@ function recallSheet(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '1.9.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '1.9.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -2469,8 +2469,8 @@ function handleEvents(ev){
     if (e.type==='rank') { for (const D of DESTS.filter(x=>x.rank===e.rank)) toast(`<b>Expediciones</b> Nuevo destino desbloqueado: ${esc(D.n)}.`, 'vio'); if (e.rank===3) toast('<b>Runas</b> Tercera ranura de runa desbloqueada.', 'vio'); }
     else if (e.type==='shUp') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} asciende a ${SH_RANKS[e.rank]}.`, 'vio');
     else if (e.type==='shDown') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} pierde un rango: se rompió la racha.`, 'red');
-    else if (e.type==='shDorm') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} se ha dormido. Despierta con 7 días seguidos.`, 'red');
-    else if (e.type==='shWake') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} ha despertado.`, 'vio');
+    else if (e.type==='shDorm') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} se ha congelado: se rompió la racha. Conserva su rango y se descongela con ${thawNeed(S.shadows[e.hid])} días seguidos.`, 'red');
+    else if (e.type==='shWake') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} se ha descongelado y vuelve como ${SH_RANKS[S.shadows[e.hid].rank]}.`, 'vio');
   }
   showNext();
 }
@@ -2809,7 +2809,7 @@ function screenSombras(){
     const sh = S.shadows[h.id] || {}; const [n, form, icn] = SHADOWS[h.id];
     const pr = shadowProgress(S,h.id); const ready = canExtract(S,h.id);
     const cls = sh.ext ? (sh.dorm ? 'ext dorm' : 'ext') : ready ? 'ready' : 'lock';
-    html += `<button class="shc ${cls}" data-act="shadow" data-v="${h.id}">${sh.ext?`<span class="rank">${sh.dorm?'Dormida':SH_RANKS[sh.rank]}</span>`:''}
+    html += `<button class="shc ${cls}" data-act="shadow" data-v="${h.id}">${sh.ext?`<span class="rank">${sh.dorm?'🧊 '+SH_RANKS[sh.rank]:SH_RANKS[sh.rank]}</span>`:''}
       <div class="fig">${ic(icn)}</div><b>${esc(n.split(',')[0])}</b><small>${esc(h.n)}</small>
       ${sh.ext?`<small style="color:var(--vio)">${sh.dorm?'Sin bonus':'+'+SH_XP[sh.rank]+' % de XP'}</small>`:`<div class="ringp"><i style="width:${Math.min(100,pr.cur/pr.need*100)}%"></i></div><small>${ready?'¡Lista para extraer!':(pr.unit==='días'?pr.cur+'/21 días':Math.floor(pr.cur/7)+'/6 semanas')}</small>`}</button>`;
   }
@@ -2822,9 +2822,8 @@ function shadowSheet(hid){
     <div class="win vio"><p class="small" style="margin:0">Racha actual: <b>${st}</b>.</p>`;
   if (sh.ext) {
     const next = sh.rank<4 ? `Siguiente rango (${SH_RANKS[sh.rank+1]}) a los ${SH_DAYS[sh.rank+1]} días de racha.` : 'Rango máximo.';
-    h2 += `<p class="small" style="margin:6px 0 0">${sh.dorm?'Dormida: despierta con 7 días seguidos.':'Rango '+SH_RANKS[sh.rank]+': +'+SH_XP[sh.rank]+' % de XP en este hábito y farmea '+SH_GOLD[sh.rank]+' de oro al día. '+next}</p>`;
-    const rc = shRecovery(S,hid); if (rc) h2 += `<div style="margin-top:10px"><div class="spread small"><span>Recuperando hacia <b>${SH_RANKS[rc.best]}</b>: un rango cada 21 días</span><b>${rc.cur}/21</b></div><span class="ach-bar" style="--gold:var(--vio)"><i style="width:${rc.cur/21*100}%"></i></span></div>`;
-    else if (sh.dorm && (sh.best||0) > 0) h2 += `<p class="tiny" style="margin:6px 0 0">Su mejor rango fue ${SH_RANKS[sh.best]}: al despertar lo irá recuperando, un rango cada 21 días.</p>`;
+    h2 += `<p class="small" style="margin:6px 0 0">${sh.dorm?'Congelada en '+SH_RANKS[sh.rank]+': mientras tanto no da bonus ni farmea.':'Rango '+SH_RANKS[sh.rank]+': +'+SH_XP[sh.rank]+' % de XP en este hábito y farmea '+SH_GOLD[sh.rank]+' de oro al día. '+next}</p>`;
+    const th = shThaw(S,hid); if (th) h2 += `<div style="margin-top:10px"><div class="spread small"><span>🧊 Se descongela con ${th.need} días seguidos y vuelve como <b>${SH_RANKS[sh.rank]}</b></span><b>${th.cur}/${th.need}</b></div><span class="ach-bar" style="--gold:#8fe6ff"><i style="width:${th.cur/th.need*100}%"></i></span></div>`;
   } else {
     h2 += `<p class="small" style="margin:6px 0 0">Extracción: ${h.w?'6 semanas seguidas cumpliendo el cupo':'21 días seguidos'}. Progreso: ${pr.unit==='días'?pr.cur+'/21':Math.floor(pr.cur/7)+'/6'}${sh.frag?' (incluye '+sh.frag+' días de fragmentos)':''}.</p>`;
   }
