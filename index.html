@@ -1300,7 +1300,7 @@ const curRank = s => rankIdx(levelInfo(s.xp).lvl);
 
 // ---- Equipo, stats y efectos ----
 function equippedItems(s){
-  const out=[]; for (const sl of SLOTS){ const u = s.eq[sl]; const iv = u && invGet(s,u); if (iv) out.push({iv, it:ITEMS[iv.id]}); } return out;
+  const out=[]; for (const sl of SLOTS){ const u = s.eq[sl]; const iv = u && invGet(s,u); if (iv) out.push({iv, it:effItem(iv)}); } return out;
 }
 function itemK(s, it){ return (s.cls && it.cls===s.cls) ? 1.25 : 1; }
 function scaleFx(e, k){
@@ -1891,13 +1891,34 @@ function forgeCost(s, plus){ let [e,c] = FORGE_COST[plus]; for (const x of allFx
 function upgrade(s, uid){ const iv = invGet(s,uid); if (iv.plus>=5) return {ok:false, why:'Ya está a +5'}; const [e,c] = forgeCost(s,iv.plus); const g = e*GOLD_PER_ESS;
   if (s.ess<e || s.cores<c || s.gold<g) return {ok:false, why:'Te faltan materiales'}; s.ess-=e; s.gold-=g; s.cores-=c; iv.plus++; return {ok:true}; }
 const GOLD_PER_ESS = 10;
-// 3) Reforja: solo a +5, vuelve a sortear qué stats da la pieza
-const REFORGE = {gold:300, cores:5};
-function ivStats(iv, it, k){ const st = itemStats(it, iv.plus, k); if (!iv.map) return st; const out = {}; for (const x in st) { const y = iv.map[x] || x; out[y] = (out[y]||0) + st[x]; } return out; }
+// ---- Forja avanzada (solo a +5) ----
+const REFORGE_RND = {gold:150, cores:2}, REFORGE_DIR = {gold:400, cores:5}, TRANSMUTE = {gold:400, cores:5};
+// Pieza efectiva: la clase y el set pueden cambiar con la Transmutación
+function effItem(iv){ const it = ITEMS[iv.id]; if (!iv.cls && iv.set===undefined) return it; return Object.assign({}, it, iv.cls ? {cls:iv.cls} : {}, iv.set!==undefined ? {set:iv.set||null} : {}); }
+function ivStats(iv, it, k){
+  const base = itemStats(it, iv.plus, k);
+  if (iv.map && !iv.dist) { const d = {}; for (const x in base) { const y = iv.map[x]||x; d[y] = (d[y]||0)+base[x]; } iv.dist = d; delete iv.map; }
+  if (!iv.dist) return base;
+  const tot = Object.values(base).reduce((a,b)=>a+b,0); const W = Object.values(iv.dist).reduce((a,b)=>a+b,0) || 1;
+  const out = {}; let used = 0; const keys = Object.keys(iv.dist).filter(x=>iv.dist[x]>0).sort((a,b)=>iv.dist[b]-iv.dist[a]);
+  keys.forEach((x,i)=>{ const v = i===keys.length-1 ? tot-used : Math.round(tot*iv.dist[x]/W); out[x] = v; used += v; });
+  return out;
+}
+const forgePts = iv => Object.values(itemStats(effItem(iv), 5, 1)).reduce((a,b)=>a+b,0);
+function payForge(s, c){ if (s.gold < c.gold || s.cores < c.cores) return false; s.gold -= c.gold; s.cores -= c.cores; return true; }
 function reforge(s, uid){ const iv = invGet(s,uid); if (!iv || iv.plus < 5) return {ok:false, why:'Solo se puede reforjar a +5'};
-  if (s.gold < REFORGE.gold || s.cores < REFORGE.cores) return {ok:false, why:'Te faltan materiales'};
-  const it = ITEMS[iv.id]; const base = Object.keys(itemStats(it, 0, 1)); const cur = JSON.stringify(ivStats(iv, it, 1)); let map = {};
-  for (let t=0; t<12; t++) { const targets = shuffle(STATS.slice()); map = {}; base.forEach((x,i)=>map[x] = targets[i]); if (JSON.stringify(ivStats(Object.assign({}, iv, {map}), it, 1)) !== cur) break; } s.gold -= REFORGE.gold; s.cores -= REFORGE.cores; iv.map = map; return {ok:true}; }
+  if (s.gold < REFORGE_RND.gold || s.cores < REFORGE_RND.cores) return {ok:false, why:'Te faltan materiales'};
+  const N = forgePts(iv); const cur = JSON.stringify(ivStats(iv, effItem(iv), 1)); let dist;
+  for (let t=0; t<20; t++) { const n = 1 + Math.floor(Math.random()*3); const sts = shuffle(STATS.slice()).slice(0,n); dist = {}; sts.forEach(x=>dist[x]=1); for (let p=n; p<N; p++) dist[pick(sts)]++;
+    if (JSON.stringify(ivStats(Object.assign({}, iv, {dist}), effItem(iv), 1)) !== cur) break; }
+  payForge(s, REFORGE_RND); iv.dist = dist; return {ok:true}; }
+function reforgeTo(s, uid, dist){ const iv = invGet(s,uid); if (!iv || iv.plus < 5) return {ok:false, why:'Solo se puede reforjar a +5'};
+  const N = forgePts(iv); const sum = STATS.reduce((a,x)=>a+(dist[x]||0),0); if (sum !== N) return {ok:false, why:'Reparte los '+N+' puntos'};
+  if (!payForge(s, REFORGE_DIR)) return {ok:false, why:'Te faltan materiales'}; iv.dist = Object.fromEntries(STATS.filter(x=>dist[x]>0).map(x=>[x,dist[x]])); return {ok:true}; }
+function transmuteSets(iv, cls){ const it = ITEMS[iv.id]; return Object.values(SET_INFO).filter(si=>si.cls===cls && Object.values(ITEMS).some(x=>x.set===si.id && x.slot===it.slot)); }
+function transmute(s, uid, cls, set){ const iv = invGet(s,uid); if (!iv || iv.plus < 5) return {ok:false, why:'Solo se puede transmutar a +5'};
+  if (!CLASSES[cls]) return {ok:false, why:'Clase no válida'}; if (set && !transmuteSets(iv,cls).some(x=>x.id===set)) return {ok:false, why:'Set no válido'};
+  if (!payForge(s, TRANSMUTE)) return {ok:false, why:'Te faltan materiales'}; iv.cls = cls; iv.set = set || null; delete iv.dist; return {ok:true}; }
 function melt(s, uid){ if (Object.values(s.eq).includes(uid)) return {ok:false, why:'Está equipada'}; const iv = invGet(s,uid); const it = ITEMS[iv.id]; const e = RAR_INFO[it.r].melt * (1+iv.plus); s.ess += e; s.inv = s.inv.filter(x=>x.uid!==uid); return {ok:true, ess:e}; }
 
 // ---- Cambio de clase ----
@@ -2829,8 +2850,25 @@ function companions(){
 }
 function petJump(){ document.querySelectorAll('.hpet .pet').forEach(p=>{ p.classList.remove('jump'); void p.offsetWidth; p.classList.add('jump'); }); }
 
+// ---- Forja avanzada: hojas ----
+let DIST = {}, DISTU = null, TRU = null, TRC = 'guerrero', TRS = '';
+function refdirSheet(){
+  const iv = invGet(S,DISTU); const it = effItem(iv); const N = forgePts(iv); const used = STATS.reduce((a,x)=>a+(DIST[x]||0),0);
+  return `<h3>Reforja dirigida</h3><p class="small muted">Reparte los <b>${N} puntos</b> de ${esc(it.n)} (a +5) entre las stats que quieras. Te quedan <b style="color:${used===N?'var(--ok)':'var(--gold)'}">${N-used}</b>.</p>
+    ${STATS.map(x=>`<div class="spread" style="padding:6px 0; border-top:1px solid var(--line)"><span style="color:${STAT_INFO[x].c}">${ic(STAT_INFO[x].ic)} ${STAT_INFO[x].n}</span><span class="row" style="gap:8px"><button class="btn sm" data-act="dist" data-v="${x}:-1" ${(DIST[x]||0)>0?'':'disabled'}>−</button><b style="min-width:24px; text-align:center">${DIST[x]||0}</b><button class="btn sm" data-act="dist" data-v="${x}:1" ${used<N?'':'disabled'}>+</button></span></div>`).join('')}
+    <button class="btn primary vio wide" style="margin-top:12px" data-act="refdirgo" ${used===N?'':'disabled'}>Reforjar · ${REFORGE_DIR.gold} de oro · ${REFORGE_DIR.cores} Núcleos</button>`;
+}
+function transmSheet(){
+  const iv = invGet(S,TRU); const it = ITEMS[iv.id]; const sets = transmuteSets(iv, TRC);
+  return `<h3>Transmutación</h3><p class="small muted">${esc(it.n)} conserva su rareza y su efecto. Elige para qué clase cuenta y, si quieres, a qué set se suma como ${SLOT_N[it.slot].toLowerCase()}.</p>
+    <div class="tier-h"><h3>Clase</h3></div><div class="chips">${Object.entries(CLASSES).map(([k,c])=>`<button class="chip ${TRC===k?'on':''}" data-act="trcls" data-v="${k}" aria-pressed="${TRC===k}" style="${TRC===k?'border-color:var(--vio); color:var(--vio)':''}">${ic(c.ic)} ${c.n}</button>`).join('')}</div>
+    <div class="tier-h"><h3>Set</h3></div><div class="chips"><button class="chip" data-act="trset" data-v="" style="${!TRS?'border-color:var(--vio); color:var(--vio)':''}">Ningún set</button>${sets.map(si=>`<button class="chip" data-act="trset" data-v="${si.id}" style="${TRS===si.id?'border-color:var(--vio); color:var(--vio)':''}">${esc(si.n)}</button>`).join('')}</div>
+    <p class="tiny" style="margin-top:10px">Sus stats pasan a ser las de la nueva clase (se borra una reforja anterior). Si cuenta para un set, suma para sus bonus de 2, 4 y 6 piezas.</p>
+    <button class="btn primary gold wide" style="margin-top:8px" data-act="trgo">Transmutar · ${TRANSMUTE.gold} de oro · ${TRANSMUTE.cores} Núcleos</button>`;
+}
+
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.3.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.4.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3296,19 +3334,22 @@ function questPanel(){
   return '';
 }
 function itemSheet(uid){
-  const iv = invGet(S,uid); const it = ITEMS[iv.id]; const k = itemK(S,it); const st = ivStats(iv, it, k);
+  const iv = invGet(S,uid); const it = effItem(iv); const k = itemK(S,it); const st = ivStats(iv, it, k);
   const eq = S.eq[it.slot]===uid; const ce = canEquip(S,uid); const si = it.set && SET_INFO[it.set];
   const fc = iv.plus<5 ? forgeCost(S, iv.plus) : null;
   return `<div class="row" style="align-items:flex-start"><div class="it r-${it.r}" style="width:84px">${ic(itemIcon(it))}${iv.plus?`<span class="plus">+${iv.plus}</span>`:''}</div>
     <div style="flex:1"><h3 class="rname" style="--rc:var(--c-${it.r})">${esc(it.n)}${iv.plus?' +'+iv.plus:''}</h3><div class="tiny">${RAR_INFO[it.r].n} · ${SLOT_N[it.slot]} · ${it.cls?CLASSES[it.cls].n:'Todas las clases'} · Rango ${RANKS[it.rank]}</div>
     <div class="chips" style="margin-top:8px">${Object.entries(st).map(([s,v])=>`<span class="chip" style="color:${STAT_INFO[s].c}">+${v} ${s}</span>`).join('')}</div></div></div>
     ${it.d?`<p class="small" style="margin:12px 0 0">${esc(it.d)}${k>1?' <span class="tiny">(+25 % por ser de tu clase)</span>':''}</p>`:''}
+    ${iv.cls||iv.set!==undefined?`<p class="tiny" style="color:var(--vio); margin:10px 0 0">🔁 Transmutada${iv.cls?' a '+CLASSES[iv.cls].n:''}${iv.set?' · cuenta para el '+esc(SET_INFO[iv.set].n):''}</p>`:''}${iv.dist?`<p class="tiny" style="color:var(--vio); margin:4px 0 0">Stats reforjadas</p>`:''}
     ${si?`<div class="win" style="margin-top:12px"><b class="small">${esc(si.n)}</b><div class="tiny">2: +5 % de XP en ${CLASSES[si.cls].s} · 4: ${esc(si.b4.d)} · 6: ${esc(si.b6.d)}</div></div>`:''}
     ${it.boss?`<p class="tiny">Pieza firma de ${esc(BOSS[it.boss].n)}.</p>`:''}
     <div class="row" style="flex-wrap:wrap; margin-top:14px">
       ${eq?'<span class="chip" style="color:var(--ok)">Equipada</span>':`<button class="btn primary" data-act="equip" data-v="${uid}" ${ce.ok?'':'disabled'}>${ce.ok?'Equipar':esc(ce.why)}</button>`}
       ${fc?`<button class="btn gold" data-act="upgrade" data-v="${uid}" ${S.ess>=fc[0]&&S.cores>=fc[1]&&S.gold>=fc[0]*GOLD_PER_ESS?'':'disabled'}>Mejorar a +${iv.plus+1} · ${fc[0]} Esencia · ${nf(fc[0]*GOLD_PER_ESS)} de oro${fc[1]?' · '+fc[1]+' Núcleos':''}</button>`:''}
-      ${iv.plus>=5?`<button class="btn vio" data-act="reforge" data-v="${uid}" ${S.gold>=REFORGE.gold&&S.cores>=REFORGE.cores?'':'disabled'}>Reforjar stats · ${REFORGE.gold} de oro · ${REFORGE.cores} Núcleos</button>`:''}
+      ${iv.plus>=5?`<button class="btn vio" data-act="reforge" data-v="${uid}" ${S.gold>=REFORGE_RND.gold&&S.cores>=REFORGE_RND.cores?'':'disabled'}>🎲 Reforja aleatoria · ${REFORGE_RND.gold} de oro · ${REFORGE_RND.cores} Núcleos</button>
+        <button class="btn vio" data-act="refdir" data-v="${uid}" ${S.gold>=REFORGE_DIR.gold&&S.cores>=REFORGE_DIR.cores?'':'disabled'}>🎯 Reforja dirigida · ${REFORGE_DIR.gold} de oro · ${REFORGE_DIR.cores} Núcleos</button>
+        <button class="btn vio" data-act="transm" data-v="${uid}" ${S.gold>=TRANSMUTE.gold&&S.cores>=TRANSMUTE.cores?'':'disabled'}>🔁 Transmutar · ${TRANSMUTE.gold} de oro · ${TRANSMUTE.cores} Núcleos</button>`:`<p class="tiny" style="width:100%; margin:4px 0 0">A +5 se desbloquean la Reforja (aleatoria o dirigida) y la Transmutación.</p>`}
       ${eq?'':`<button class="btn red" data-act="melt" data-v="${uid}">Fundir · +${RAR_INFO[it.r].melt*(1+iv.plus)} Esencia</button>`}
     </div><p class="tiny" style="margin-top:10px">Tienes ${S.ess} de Esencia y ${S.cores} Núcleos. Los Núcleos se ganan con jefes, semanas perfectas, rachas de salas y subidas de rango.</p>`;
 }
@@ -3528,7 +3569,14 @@ function act(name, v, el){
     case 'item': openSheet(itemSheet(v)); break;
     case 'invf': INVF = v; render(); break;
     case 'equip': { const r = equip(S, v); if (!r.ok) return toast(r.why,'red'); save(); closeSheet(); render(); break; }
-    case 'reforge': { const r = reforge(S, v); if (!r.ok) return toast(r.why,'red'); save(); openSheet(itemSheet(v)); render(); particles({color:'vio', n:70}); toast('<b>Forja</b> Stats reforjadas.', 'vio'); break; }
+    case 'reforge': { const r = reforge(S, v); if (!r.ok) return toast(r.why,'red'); save(); openSheet(itemSheet(v)); render(); particles({color:'vio', n:70}); toast('<b>Forja</b> Stats reforjadas al azar.', 'vio'); break; }
+    case 'refdir': { const iv = invGet(S,v); DIST = Object.assign({}, ivStats(iv, effItem(iv), 1)); const N = forgePts(iv); const cur = Object.values(DIST).reduce((a,b)=>a+b,0); if (cur!==N) { DIST = {}; DIST[CLASSES[effItem(iv).cls||'guerrero'].s] = N; } DISTU = v; openSheet(refdirSheet()); break; }
+    case 'dist': { const [st, d] = v.split(':'); const N = forgePts(invGet(S,DISTU)); const used = STATS.reduce((a,x)=>a+(DIST[x]||0),0); const nv = (DIST[st]||0) + Number(d); if (nv < 0 || (Number(d)>0 && used>=N)) break; DIST[st] = nv; openSheet(refdirSheet()); break; }
+    case 'refdirgo': { const r = reforgeTo(S, DISTU, DIST); if (!r.ok) return toast(r.why,'red'); save(); openSheet(itemSheet(DISTU)); render(); particles({color:'vio', n:90}); toast('<b>Forja</b> Reforja dirigida hecha.', 'vio'); break; }
+    case 'transm': { TRU = v; TRC = effItem(invGet(S,v)).cls || 'guerrero'; TRS = ''; openSheet(transmSheet()); break; }
+    case 'trcls': TRC = v; TRS = ''; openSheet(transmSheet()); break;
+    case 'trset': TRS = v; openSheet(transmSheet()); break;
+    case 'trgo': { const r = transmute(S, TRU, TRC, TRS); if (!r.ok) return toast(r.why,'red'); save(); openSheet(itemSheet(TRU)); render(); particles({color:'gold', n:100}); toast('<b>Forja</b> Pieza transmutada a '+esc(CLASSES[TRC].n)+'.', 'vio'); break; }
     case 'upgrade': { const r = upgrade(S, v); if (!r.ok) return toast(r.why,'red'); save(); openSheet(itemSheet(v)); render(); particles({color:'gold', n:50}); break; }
     case 'melt': { const r = melt(S, v); if (!r.ok) return toast(r.why,'red'); toast(`<b>Forja</b> +${r.ess} de Esencia.`); save(); closeSheet(); render(); break; }
     case 'questgo': S.quest = {start: today(), type: questAvailable(S)}; save(); render(); break;
