@@ -1328,7 +1328,7 @@ function allFx(s, d){
 }
 function statVal(s, st, eqOnly){
   let v = eqOnly ? 0 : Math.floor((s.statXp[st]||0)/50) + ((s.pts && s.pts[st])||0) + (s.pets ? Math.round(petSum(s,'stat',b=>b.s===st)) : 0);
-  for (const {iv,it} of equippedItems(s)) { const ss = itemStats(it, iv.plus, itemK(s,it)); v += ss[st]||0; }
+  for (const {iv,it} of equippedItems(s)) { const ss = ivStats(iv, it, itemK(s,it)); v += ss[st]||0; }
   return v;
 }
 const statsAll = s => Object.fromEntries(STATS.map(x=>[x, statVal(s,x)]));
@@ -1564,17 +1564,20 @@ function createWeek(s, ws, fug){
     }
   }
   if (rank===5) w.bosses.forEach(b=>{ if (BOSS[b.id].rank===5) b.asc = s.asc; });
+  if (s.mig22) { const st = statsAll(s); w.ref = Object.fromEntries(STATS.map(x=>[x, st[x]])); }
   s.weeks[ws] = w; return w;
 }
 function bossMods(bid){ const bo = bid && BOSS[bid]; return {res: bo && bo.resist, tr: bo && bo.trait}; }
 function potential(s, w, bid){
-  const base = 1 + RANK_BASE[w.rank]/100; const {res, tr} = bossMods(bid); let tot = 0, act = 0;
-  const rm = st => st===res ? RESIST : 1;
+  const rb = RANK_BASE[w.rank]; const {res, tr} = bossMods(bid); let tot = 0, act = 0;
+  // Vida del jefe: media entre la referencia del rango y tus stats al empezar la semana
+  const bs = st => 1 + (w.ref ? (rb + Math.max(rb, w.ref[st]||0))/2 : rb)/100;
+  const rm = st => (st===res ? RESIST : 1) * bs(st);
   for (let i=0;i<7;i++){ const d = addD(w.ws,i); if (d < s.start || inEstasis(s,d)) continue; act++;
     const dm = (tr==='caparazon' && dow(d)<=2 ? 0.75 : 1) * (tr==='escudo' ? 0.85 : 1);
-    for (const h of DAILY) if (!isProtected(s,d,h.id)) tot += h.xp*base*dm*rm(h.s); }
+    for (const h of DAILY) if (!isProtected(s,d,h.id)) tot += h.xp*dm*rm(h.s); }
   const crit = tr==='piedra' ? 1.5 : 2; const wm = tr==='caparazon' ? 1-0.25*2/7 : 1;
-  for (const h of WEEKLY) tot += quotaFor(s,w.ws,h) * h.xp * base * crit * wm * rm(h.s);
+  for (const h of WEEKLY) tot += quotaFor(s,w.ws,h) * h.xp * crit * wm * rm(h.s);
   return tot * DMG_SCALE;
 }
 function bossHp(s, w){
@@ -1885,7 +1888,16 @@ function redeem(s, id){ const r = s.rewards.find(x=>x.id===id); const c = canRed
 function canEquip(s, uid){ const iv = invGet(s,uid); const it = ITEMS[iv.id]; if (curRank(s) < it.rank) return {ok:false, why:'Requiere rango '+RANKS[it.rank]}; return {ok:true}; }
 function equip(s, uid){ const c = canEquip(s,uid); if (!c.ok) return c; const it = ITEMS[invGet(s,uid).id]; s.eq[it.slot] = uid; return {ok:true}; }
 function forgeCost(s, plus){ let [e,c] = FORGE_COST[plus]; for (const x of allFx(s,null)) if (x.t==='forge') e = Math.ceil(e*(1-x.pct/100)); return [e,c]; }
-function upgrade(s, uid){ const iv = invGet(s,uid); if (iv.plus>=5) return {ok:false, why:'Ya está a +5'}; const [e,c] = forgeCost(s,iv.plus); if (s.ess<e || s.cores<c) return {ok:false, why:'Te faltan materiales'}; s.ess-=e; s.cores-=c; iv.plus++; return {ok:true}; }
+function upgrade(s, uid){ const iv = invGet(s,uid); if (iv.plus>=5) return {ok:false, why:'Ya está a +5'}; const [e,c] = forgeCost(s,iv.plus); const g = e*GOLD_PER_ESS;
+  if (s.ess<e || s.cores<c || s.gold<g) return {ok:false, why:'Te faltan materiales'}; s.ess-=e; s.gold-=g; s.cores-=c; iv.plus++; return {ok:true}; }
+const GOLD_PER_ESS = 10;
+// 3) Reforja: solo a +5, vuelve a sortear qué stats da la pieza
+const REFORGE = {gold:300, cores:5};
+function ivStats(iv, it, k){ const st = itemStats(it, iv.plus, k); if (!iv.map) return st; const out = {}; for (const x in st) { const y = iv.map[x] || x; out[y] = (out[y]||0) + st[x]; } return out; }
+function reforge(s, uid){ const iv = invGet(s,uid); if (!iv || iv.plus < 5) return {ok:false, why:'Solo se puede reforjar a +5'};
+  if (s.gold < REFORGE.gold || s.cores < REFORGE.cores) return {ok:false, why:'Te faltan materiales'};
+  const it = ITEMS[iv.id]; const base = Object.keys(itemStats(it, 0, 1)); const cur = JSON.stringify(ivStats(iv, it, 1)); let map = {};
+  for (let t=0; t<12; t++) { const targets = shuffle(STATS.slice()); map = {}; base.forEach((x,i)=>map[x] = targets[i]); if (JSON.stringify(ivStats(Object.assign({}, iv, {map}), it, 1)) !== cur) break; } s.gold -= REFORGE.gold; s.cores -= REFORGE.cores; iv.map = map; return {ok:true}; }
 function melt(s, uid){ if (Object.values(s.eq).includes(uid)) return {ok:false, why:'Está equipada'}; const iv = invGet(s,uid); const it = ITEMS[iv.id]; const e = RAR_INFO[it.r].melt * (1+iv.plus); s.ess += e; s.inv = s.inv.filter(x=>x.uid!==uid); return {ok:true, ess:e}; }
 
 // ---- Cambio de clase ----
@@ -1964,6 +1976,7 @@ function tick(s){
   if (!s.seen || !Object.keys(s.seen).length) { s.seen = {}; for (const x of s.inv) s.seen[x.id] = 1; } if (!s.pts) s.pts = {};
   if (!s.runes) s.runes = {}; if (!s.runeEq) s.runeEq = []; if (!s.runePend) s.runePend = {}; if (!s.exps) s.exps = [];
   if (!s.mig17) migrate17(s);
+  s.mig22 = true;
   petInit(s);
   const ev = []; syncWeeks(s, ev); processShadows(s, ev); checkBossLive(s, ev); checkLevel(s, ev); processMissions(s, ev); checkAchievements(s, ev);
   return ev;
@@ -2628,7 +2641,7 @@ const PET_DEF = [
 const PETS = PET_DEF.map(([id,n,egg,rar,ic,b,v,txt,ev])=>({id,n,egg,rar,ic,b,v,txt: txt.startsWith('%') ? '\u00a0'+txt : txt, ev}));
 const PET = Object.fromEntries(PETS.map(p=>[p.id,p]));
 const PET_STAGE = ['Cría','Joven','Adulta'];
-const PET_FOOD = [10, 40]; // Bayas acumuladas para Joven y Adulta
+const PET_FOOD = [20, 80]; // Bayas acumuladas para Joven y Adulta
 const STAR_COST = [1,2,3];
 const EXP_EGGS = {cueva:['cristal','roca'], mina:['hierro','roca','cristal'], bosque:['raiz','viento','cosecha'], templo:['marea','lunar','raiz'], puerto:['marea','cosecha'], cripta:['lunar','tinta'], abismo:['trueno','viento'], biblioteca:['tinta','alba'], nido:['trueno','hierro','alba'], trono:EGG_ORDER};
 const EXP_EGG_P = [0.10,0.15,0.20,0.25,0.30];
@@ -2817,7 +2830,7 @@ function companions(){
 function petJump(){ document.querySelectorAll('.hpet .pet').forEach(p=>{ p.classList.remove('jump'); void p.offsetWidth; p.classList.add('jump'); }); }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.2.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.3.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3283,7 +3296,7 @@ function questPanel(){
   return '';
 }
 function itemSheet(uid){
-  const iv = invGet(S,uid); const it = ITEMS[iv.id]; const k = itemK(S,it); const st = itemStats(it, iv.plus, k);
+  const iv = invGet(S,uid); const it = ITEMS[iv.id]; const k = itemK(S,it); const st = ivStats(iv, it, k);
   const eq = S.eq[it.slot]===uid; const ce = canEquip(S,uid); const si = it.set && SET_INFO[it.set];
   const fc = iv.plus<5 ? forgeCost(S, iv.plus) : null;
   return `<div class="row" style="align-items:flex-start"><div class="it r-${it.r}" style="width:84px">${ic(itemIcon(it))}${iv.plus?`<span class="plus">+${iv.plus}</span>`:''}</div>
@@ -3294,7 +3307,8 @@ function itemSheet(uid){
     ${it.boss?`<p class="tiny">Pieza firma de ${esc(BOSS[it.boss].n)}.</p>`:''}
     <div class="row" style="flex-wrap:wrap; margin-top:14px">
       ${eq?'<span class="chip" style="color:var(--ok)">Equipada</span>':`<button class="btn primary" data-act="equip" data-v="${uid}" ${ce.ok?'':'disabled'}>${ce.ok?'Equipar':esc(ce.why)}</button>`}
-      ${fc?`<button class="btn gold" data-act="upgrade" data-v="${uid}" ${S.ess>=fc[0]&&S.cores>=fc[1]?'':'disabled'}>Mejorar a +${iv.plus+1} · ${fc[0]} Esencia${fc[1]?' · '+fc[1]+' Núcleos':''}</button>`:''}
+      ${fc?`<button class="btn gold" data-act="upgrade" data-v="${uid}" ${S.ess>=fc[0]&&S.cores>=fc[1]&&S.gold>=fc[0]*GOLD_PER_ESS?'':'disabled'}>Mejorar a +${iv.plus+1} · ${fc[0]} Esencia · ${nf(fc[0]*GOLD_PER_ESS)} de oro${fc[1]?' · '+fc[1]+' Núcleos':''}</button>`:''}
+      ${iv.plus>=5?`<button class="btn vio" data-act="reforge" data-v="${uid}" ${S.gold>=REFORGE.gold&&S.cores>=REFORGE.cores?'':'disabled'}>Reforjar stats · ${REFORGE.gold} de oro · ${REFORGE.cores} Núcleos</button>`:''}
       ${eq?'':`<button class="btn red" data-act="melt" data-v="${uid}">Fundir · +${RAR_INFO[it.r].melt*(1+iv.plus)} Esencia</button>`}
     </div><p class="tiny" style="margin-top:10px">Tienes ${S.ess} de Esencia y ${S.cores} Núcleos. Los Núcleos se ganan con jefes, semanas perfectas, rachas de salas y subidas de rango.</p>`;
 }
@@ -3514,6 +3528,7 @@ function act(name, v, el){
     case 'item': openSheet(itemSheet(v)); break;
     case 'invf': INVF = v; render(); break;
     case 'equip': { const r = equip(S, v); if (!r.ok) return toast(r.why,'red'); save(); closeSheet(); render(); break; }
+    case 'reforge': { const r = reforge(S, v); if (!r.ok) return toast(r.why,'red'); save(); openSheet(itemSheet(v)); render(); particles({color:'vio', n:70}); toast('<b>Forja</b> Stats reforjadas.', 'vio'); break; }
     case 'upgrade': { const r = upgrade(S, v); if (!r.ok) return toast(r.why,'red'); save(); openSheet(itemSheet(v)); render(); particles({color:'gold', n:50}); break; }
     case 'melt': { const r = melt(S, v); if (!r.ok) return toast(r.why,'red'); toast(`<b>Forja</b> +${r.ess} de Esencia.`); save(); closeSheet(); render(); break; }
     case 'questgo': S.quest = {start: today(), type: questAvailable(S)}; save(); render(); break;
