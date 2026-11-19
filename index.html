@@ -709,6 +709,9 @@ main{padding:4px 14px 20px}
 .hrow.prot .hcheck{border-style:dashed; color:var(--sys)} .hrow.prot .hcheck .ic{font-size:15px}
 .hrow.prot .hxp{color:var(--sys); font-weight:700}
 .protx{display:inline-flex; align-items:center; gap:4px; color:var(--sys)}
+
+.dprot{display:block; font-size:11px; color:var(--sys); line-height:1}
+.degg{display:flex; align-items:center; justify-content:center; gap:2px; margin-top:4px; flex-wrap:wrap} .degg .egg.mini{width:14px; height:17px} .degg small{width:100%; font-size:10px; color:var(--tx3)}
 </style>
 </head>
 <body>
@@ -1360,6 +1363,8 @@ function isProtected(s, d, hid){
   if (dy.frz) return true; const h = HB[hid]; return !!(h && dy.sh[h.s]);
 }
 const done = (s,d,hid) => !!(dayR(s,d) && dayR(s,d).c[hid]);
+const fulfilled = (s,d,hid) => done(s,d,hid) || isProtected(s,d,hid);
+const libreDay = (s,d,hid) => hid==='grasa' && !!(dayR(s,d) && dayR(s,d).libre);
 function roomClear(s, d){
   if (inEstasis(s,d) || d < s.start) return false;
   return DAILY.every(h => done(s,d,h.id) || isProtected(s,d,h.id));
@@ -1423,7 +1428,7 @@ function streakWeeks(s, hid){
 function doneTotal(s, hid){
   const h = HB[hid]; const t = today(); let n = 0;
   if (h.w) { for (let ws=wstart(s.start); ws<=wstart(t); ws=addD(ws,7)) if (quotaFor(s,ws,h)>0 && weekMet(s,ws,h)) n++; return n; }
-  for (let d=s.start; d<=t; d=addD(d,1)) if (done(s,d,hid)) n++; return n;
+  for (let d=s.start; d<=t; d=addD(d,1)) if (done(s,d,hid) || libreDay(s,d,hid)) n++; return n;
 }
 function shadowProgress(s, hid){
   const h = HB[hid]; const sh = s.shadows[hid] || {}; const frag = sh.frag||0; const n = doneTotal(s,hid) + frag;
@@ -1743,7 +1748,7 @@ function processShadows(s, events){
     const step = ok => { if (ok===true) { sh.miss = 0; if (sh.dorm) sh.thaw++; } else if (ok===false && !sh.dorm) { sh.miss++; if (sh.miss >= (h.w?2:3)) { sh.dorm = true; sh.thaw = 0; events.push({type:'shDorm', hid}); } } };
     if (!h.w) {
       let d = sh.proc ? addD(sh.proc,1) : addD(sh.extAt,1);
-      while (d <= y) { step(done(s,d,hid) ? true : isProtected(s,d,hid) ? null : false); sh.proc = d; d = addD(d,1); }
+      while (d <= y) { step(done(s,d,hid) || libreDay(s,d,hid) ? true : isProtected(s,d,hid) ? null : false); sh.proc = d; d = addD(d,1); }
     } else {
       let ws = sh.proc ? addD(sh.proc,7) : addD(wstart(sh.extAt),7); const cur = wstart(addD(y,1));
       while (ws < cur) { if (quotaFor(s,ws,h)>0) step(weekMet(s,ws,h)); sh.proc = ws; ws = addD(ws,7); }
@@ -1976,8 +1981,8 @@ function weekSummary(s, ws){
   const cur = ws === wstart(t) && !(w && w.resolved);
   for (let i=0;i<7;i++){ const d = addD(ws,i); if (d < s.start || inEstasis(s,d)) { days.push(null); continue; } actTot++;
     if (d > t) { days.push({d, pct:null}); continue; } act++;
-    const n = DAILY.filter(h=>done(s,d,h.id)).length; dDone += n; if (roomClear(s,d)) rooms++;
-    days.push({d, pct: Math.round(n/DAILY.length*100)});
+    const n = DAILY.filter(h=>fulfilled(s,d,h.id)).length; const np = DAILY.filter(h=>!done(s,d,h.id) && isProtected(s,d,h.id)).length; dDone += n; if (roomClear(s,d)) rooms++;
+    days.push({d, pct: Math.round(n/DAILY.length*100), prot: np});
     const dy = dayR(s,d); if (dy) { xp += Object.values(dy.xp).reduce((a,b)=>a+b,0) + ((dy.bonus && dy.bonus.xp)||0); } }
   let qExp=0, qDone=0; for (const h of WEEKLY) { const q = quotaFor(s,ws,h); qExp += q; qDone += Math.min(q, weekCount(s,ws,h.id)); }
   // Porcentaje fijo sobre el total de la semana: diarios de todos los días activos + cupos
@@ -2271,7 +2276,7 @@ function screenExp(){
   const hasShadow = Object.values(S.shadows).some(v=>v.ext); const exps = S.exps || [];
   let h = `<div class="sys-title"><h1>Expediciones</h1><span class="sub">${exps.length}/${expSlots(S)} en curso</span></div>`;
   if (!hasShadow) h += `<section class="win vio lockbox"><div class="lockic" style="color:var(--vio); filter:drop-shadow(0 0 16px var(--vio))">${ic('padlock')}</div><h2 class="boss-name" style="font-size:22px">Aún no tienes sombras</h2>
-    <p class="small muted">Las expediciones se abren con tu primera sombra: 21 días seguidos cumpliendo un hábito diario. Entonces podrás mandar grupos de hasta 3 sombras a por botín.</p></section>`;
+    <p class="small muted">Las expediciones se abren con tu primera sombra: 21 días cumpliendo un hábito diario (no hace falta que sean seguidos). Entonces podrás mandar grupos de hasta 3 sombras a por botín.</p></section>`;
   for (const e of exps) { const D = DEST[e.dest]; const done = Date.now() >= e.end; const pr = Math.min(100, (Date.now()-e.start)/(e.end-e.start)*100);
     h += `<section class="win vio expact"><div class="row"><span class="expic">${ic(D.ic)}</span><div style="flex:1; min-width:0"><b class="rname" style="--rc:var(--tx)">${esc(D.n)} ${LV_ROMAN[e.lv]}</b>
       <div class="tiny">${e.team.map(x=>esc(SHADOWS[x][0].split(',')[0])).join(', ')} · éxito ${e.ch} %</div></div></div>
@@ -2279,7 +2284,7 @@ function screenExp(){
       ${done?`<button class="btn primary vio wide" style="margin-top:10px" data-act="expcol" data-v="${e.id}">Recoger</button>`: S.bag.retirada>0 ? `<button class="btn sm vio" style="margin-top:10px" data-act="retreat" data-v="${e.id}">Usar Pergamino de Retirada (50 % del botín)</button>`:''}</section>`; }
   h += `<div class="tier-h"><h3>Destinos</h3><span class="tiny">Mientras están fuera, tus sombras no farmean AFK</span></div><div class="dgrid">`;
   for (const D of DESTS) { const lock = curRank(S) < D.rank;
-    h += `<button class="dcard ${lock?'lock':''}" data-act="expdest" data-v="${D.id}" ${lock?'disabled':''}><span class="expic">${ic(lock?'padlock':D.ic)}</span><b>${esc(D.n)}</b><small>${D.h} h · ${esc(D.d)}</small>${lock?`<small class="dlock">Rango ${RANKS[D.rank]}</small>`:''}</button>`; }
+    h += `<button class="dcard ${lock?'lock':''}" data-act="expdest" data-v="${D.id}" ${lock?'disabled':''}><span class="expic">${ic(lock?'padlock':D.ic)}</span><b>${esc(D.n)}</b><small>${D.h} h · ${esc(D.d)}</small><span class="degg">${(EXP_EGGS[D.id]===EGG_ORDER?['evento']:EXP_EGGS[D.id]||[]).map(g=>eggSVG(g,0,'mini')).join('')}<small>${D.id==='trono'?'Cualquier huevo':(EXP_EGGS[D.id]||[]).map(g=>EGGS[g].n.replace(/Huevo (del |de |)/,'')).join(' · ')}</small></span>${lock?`<small class="dlock">Rango ${RANKS[D.rank]}</small>`:''}</button>`; }
   return h + `</div>`;
 }
 function expSheet(){
@@ -2287,7 +2292,7 @@ function expSheet(){
   const pw = expPower(S, team); const ch = team.length ? expChance(pw, lv) : 0;
   const afkLost = team.reduce((a,x)=>a+SH_GOLD[S.shadows[x].rank],0);
   const full = (S.exps||[]).length >= expSlots(S);
-  return `<div style="text-align:center"><span class="expic big">${ic(D.ic)}</span><h3>${esc(D.n)}</h3><p class="small muted" style="margin:0 0 10px">${D.h} horas · ${esc(D.d)}</p></div>
+  return `<div style="text-align:center"><span class="expic big">${ic(D.ic)}</span><h3>${esc(D.n)}</h3><p class="small muted" style="margin:0 0 4px">${D.h} horas · ${esc(D.d)}</p><p class="tiny" style="margin:0 0 10px">🥚 Huevos posibles: ${D.id==='trono'?'cualquiera':(EXP_EGGS[D.id]||[]).map(g=>esc(EGGS[g].n)).join(', ')} · ${EXP_EGG_P.map(p=>Math.round(p*100)+' %').join(' / ')} según el nivel (I-V), si sale bien</p></div>
     <div class="seg subtabs" role="group" aria-label="Nivel">${LV_ROMAN.map((x,i)=>`<button data-act="explv" data-v="${i}" aria-pressed="${lv===i}">${x}</button>`).join('')}</div>
     <p class="tiny" style="margin:6px 0 10px">Nivel ${LV_ROMAN[lv]}: poder recomendado ${EXP_REC[lv]} · botín ×${String(EXP_MUL[lv]).replace('.',',')}</p>
     <b class="small">Elige hasta 3 sombras</b>
@@ -2695,7 +2700,7 @@ function petFx(s){
 // ---- Huevos ----
 function addEgg(s, egg, ev){ petInit(s); s.eggs.push({uid:'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), egg, ev:ev||null}); }
 function randomEgg(){ return pick(EGG_ORDER); }
-function blockDone(s, d, b){ const hs = BLOCK_H(b); return hs.length && hs.every(h=>done(s,d,h)); }
+function blockDone(s, d, b){ const hs = BLOCK_H(b); return hs.length && hs.every(h=>fulfilled(s,d,h)); }
 function incProgress(s, inc){
   const E = EGGS[inc.egg]; const c = E.cond; let n = 0; const t = today();
   for (let d=inc.start; d<=t; d=addD(d,1)) {
@@ -2868,7 +2873,7 @@ function transmSheet(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.4.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.4.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3197,7 +3202,7 @@ function screenRoja(){
 }
 function shortWeek(ws){ const a = dparse(ws), b = dparse(addD(ws,6)); const m = x => MON[x.getMonth()].slice(0,3);
   return a.getMonth()===b.getMonth() ? `${a.getDate()}-${b.getDate()} ${m(b)}` : `${a.getDate()} ${m(a)}-${b.getDate()} ${m(b)}`; }
-function dayStrip(x){ return `<div class="dstrip">${x.days.map((d,i)=>`<div class="dcell ${!d?'off':d.pct===null?'fut':''}"><small>${'LMXJVSD'[i]}</small><i style="height:${d&&d.pct!==null?Math.max(3,Math.round(d.pct*0.44)):0}px; background:${d&&d.pct===100?'var(--gold)':'var(--sys)'}"></i><b>${d&&d.pct!==null?d.pct+'%':'·'}</b></div>`).join('')}</div>`; }
+function dayStrip(x){ return `<div class="dstrip">${x.days.map((d,i)=>`<div class="dcell ${!d?'off':d.pct===null?'fut':''}"><small>${'LMXJVSD'[i]}</small><i style="height:${d&&d.pct!==null?Math.max(3,Math.round(d.pct*0.44)):0}px; background:${d&&d.pct===100?'var(--gold)':'var(--sys)'}"></i><b>${d&&d.pct!==null?d.pct+'%':'·'}</b>${d&&d.prot?`<span class="dprot" title="Incluye hábitos protegidos">${ic('checked-shield')}</span>`:''}</div>`).join('')}</div>${x.days.some(d=>d&&d.prot)?'<p class="tiny" style="margin:4px 0 0">🛡️ Ese día incluye hábitos protegidos (comida libre, escudo, Vendas…): cuentan como cumplidos.</p>':''}`; }
 function screenCronica(){
   const t = today(); const weeks = Object.keys(S.weeks).filter(ws=>ws<=t && addD(ws,6)>=S.start).sort().reverse();
   if (!weeks.length) return `<div class="win"><div class="empty">Tu crónica empieza con tu primera Puerta.</div></div>`;
