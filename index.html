@@ -1867,7 +1867,7 @@ const MERCH_COS = [['frame','bronce'],['aura','ascuas'],['emblem','ojo']];
 function merchWeek(s){
   const ws = wstart(today());
   if (!s.merch || s.merch.ws !== ws) { const free = MERCH_COS.filter(([t,id])=>!(s.cos||[]).includes(t+':'+id));
-    const mn = eventFor(ws)==='mercado'; const evw = eventFor(ws); s.merch = {ws, items:shuffle(MERCH_POOL.concat(Math.random()<0.4?['huevo']:[])).slice(0, mn?5:3).concat(evw?['ofrenda','ofrenda2']:[]).concat(Math.random()<0.15?['cobre']:[]), disc: mn?0.5:0.75, cos: free.length && Math.random()<(mn?0.5:0.1) ? pick(free) : null, bought:{}}; }
+    const mn = eventFor(ws)==='mercado'; const evw = eventFor(ws); s.merch = {ws, items:shuffle(MERCH_POOL.concat(Math.random()<0.4?['huevo']:[])).slice(0, mn?5:3).concat(evw?['ofrenda','ofrenda2']:[]).concat(Math.random()<0.15?['cobre']:[]), disc: mn?0.5:0.75, cos: free.length && Math.random()<(mn?0.5:0.1) ? pick(free) : null, bought:{}}; s.dirty = 1; }
   return s.merch;
 }
 function buyMerch(s, id){
@@ -2949,7 +2949,7 @@ function dailyDeal(s){
   else if (x < 92) deal = {kind:'exch', id:pick(DEAL_EXCH).id};
   else if (x < 98) deal = {kind:'shop', id:'huevo'};
   else { const free = MERCH_COS.filter(([t,id])=>!(s.cos||[]).includes(t+':'+id)); deal = free.length ? {kind:'cos', cos:pick(free)} : {kind:'shop', id:'huevo'}; }
-  s.deal = Object.assign({d, bought:false}, deal); return s.deal;
+  s.deal = Object.assign({d, bought:false}, deal); s.dirty = 1; return s.deal;
 }
 function dealPrice(s, dl){ if (dl.kind==='ofrenda') return 150; if (dl.kind==='exch') return DEAL_EXCH.find(e=>e.id===dl.id).p; if (dl.kind==='cos') return 850; return Math.round(priceOf(s, SHOP.find(x=>x.id===dl.id))*0.85); }
 function buyDeal(s){
@@ -3002,7 +3002,7 @@ function cobreSheet(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.5.3'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.5.4'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3825,6 +3825,8 @@ document.addEventListener('change', e=>{ const k = e.target.dataset.chg; if (!k 
   if (k==='portalcalc') { const c = $('#pcost'); if (c) c.textContent = nf(15*Number(e.target.value)); return; }
   if (k==='title') S.title = e.target.value; if (k==='theme') { S.theme = e.target.value; applyTheme(); } if (k==='name') S.name = e.target.value.trim() || S.name;
   save(); render(); });
+// Lo que se sortea al pintar (Oferta del día, Mercader) se guarda al momento
+const _renderBase = render; render = function(){ _renderBase(); if (S && S.dirty) { delete S.dirty; save(); } };
 function boot(){
   setInterval(tickTimers, 1000);
   S = lsGet(); if (S) afterLoad();
