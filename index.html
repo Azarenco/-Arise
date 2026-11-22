@@ -2798,7 +2798,7 @@ function setActive(s, uid){ petInit(s); if (s.petAct.includes(uid)) { s.petAct =
 // ---- Comida libre ----
 function libreWeek(s, d){ const ws = wstart(d); let n = 0; for (let i=0;i<7;i++){ const dy = dayR(s, addD(ws,i)); if (dy && dy.libre) n++; } return n; }
 function toggleLibre(s, d){ const dy = day(s,d); if (dy.libre) { dy.libre = false; return {ok:true}; }
-  if (libreWeek(s,d) >= 2) return {ok:false, why:'Máximo 2 comidas libres por semana'}; if (dy.c.grasa) return {ok:false, why:'Ya marcaste la grasa saturada controlada'};
+  if (libreWeek(s,d) >= 3) return {ok:false, why:'Máximo 3 comidas libres por semana'}; if (dy.c.grasa) return {ok:false, why:'Ya marcaste la grasa saturada controlada'};
   dy.libre = true; return {ok:true}; }
 
 // ===================== INTERFAZ =====================
@@ -3002,7 +3002,7 @@ function cobreSheet(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.5.4'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.5.5'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3202,7 +3202,7 @@ function screenHoy(){
       ${dl.length>1?`<button class="btn sm" data-act="all" data-v="${bl.id}">Marcar todo</button>`:''}</div>`;
     const mn = MS.find(m=>m.b===bl.id); if (mn) html += minionHead(mn);
     for (const h of hs) html += habitRow(h, d, dy, ws);
-    if (bl.id==='nutri') html += `<div class="row libre" style="margin-top:8px"><button class="btn sm ${dy.libre?'gold':''}" data-act="libre" aria-pressed="${!!dy.libre}">${ic('hot-meal')}${dy.libre?'Comida libre ✓':'Comida libre'}</button><span class="tiny">${libreWeek(S,d)}/2 esta semana</span></div>`;
+    if (bl.id==='nutri') html += `<div class="row libre" style="margin-top:8px"><button class="btn sm ${dy.libre?'gold':''}" data-act="libre" aria-pressed="${!!dy.libre}">${ic('hot-meal')}${dy.libre?'Comida libre ✓':'Comida libre'}</button><span class="tiny">${libreWeek(S,d)}/3 esta semana</span></div>`;
     html += `</section>`;
   }
   html += `<div class="row" style="justify-content:center; margin:6px 0 4px"><button class="btn vio" data-act="usesheet">${ic('checked-shield')}Usar un objeto</button></div>`;
