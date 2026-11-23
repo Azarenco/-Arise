@@ -774,6 +774,8 @@ main{padding:4px 14px 20px}
 .win.block .hrow.on .hcheck{background:var(--sys); border-color:var(--sys)}
 .win.block .hcheck{border-color:color-mix(in srgb, var(--sys) 70%, transparent)}
 .win.block .btn{border-color:color-mix(in srgb, var(--sys) 55%, var(--line)); color:var(--sys)}
+
+.win > .wh .ic{color:var(--sys)}
 </style>
 </head>
 <body>
@@ -3145,7 +3147,7 @@ function bagResources(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.3'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.4'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3662,11 +3664,12 @@ function armItemSheet(id){
 let EQT = 'arm';
 function eqTabs(){ return `<div class="seg subtabs" role="group" aria-label="Equipo"><button data-act="eqt" data-v="arm" aria-pressed="${EQT==='arm'}">${ic('crossed-swords')}Armería</button><button data-act="eqt" data-v="stats" aria-pressed="${EQT==='stats'}">${ic('upgrade')}Estadísticas${freePoints(S)>0?' <span class="badge">'+freePoints(S)+'</span>':''}</button><button data-act="eqt" data-v="runas" aria-pressed="${EQT==='runas'}">${ic('crystal-shine')}Runas</button></div>`; }
 function screenTienda(){
-  let html = `<div class="seg subtabs" role="group" aria-label="Tienda"><button data-act="shopt" data-v="obj" aria-pressed="${SHOPT==='obj'}">${ic('shopping-bag')}Bazar</button><button data-act="shopt" data-v="rew" aria-pressed="${SHOPT==='rew'}">${ic('present')}Premios</button><button data-act="shopt" data-v="bag" aria-pressed="${SHOPT==='bag'}">${ic('locked-chest')}Bolsa</button></div>
+  if (SHOPT==='rew') SHOPT = 'obj';
+  let html = `<div class="seg subtabs" role="group" aria-label="Tienda"><button data-act="shopt" data-v="obj" aria-pressed="${SHOPT==='obj'}">${ic('shopping-bag')}Bazar</button><button data-act="shopt" data-v="bag" aria-pressed="${SHOPT==='bag'}">${ic('locked-chest')}Bolsa</button></div>
     <div class="sys-title"><h1>${{obj:'Bazar del Sistema', rew:'Premios reales', bag:'Bolsa'}[SHOPT]}</h1></div>`;
   if (SHOPT==='obj') {
     html += dealPanel() + merchPanel();
-    html += `<section class="win"><div class="wh">${ic('coins-pile')}<h2>Catálogo del Sistema</h2><span class="tiny">Siempre disponible</span></div>${SHOP.filter(it=>!it.merch).slice().sort((a,b)=>priceOf(S,b)-priceOf(S,a)).map(it=>{ const c = canBuy(S,it); return `<div class="shop-item"><div class="sic" ${it.s?`style="color:${STAT_INFO[it.s].c}"`:''}>${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${S.bag[it.id]?`<small class="tiny">En la bolsa: ${S.bag[it.id]}</small>`:''}</div>
+    html += `<section class="win"><div class="wh">${ic('coins-pile')}<h2>Catálogo del Sistema</h2><span class="tiny">Siempre disponible</span></div>${SHOP.filter(it=>!it.merch).slice().sort((a,b)=>priceOf(S,a)-priceOf(S,b)).map(it=>{ const c = canBuy(S,it); return `<div class="shop-item"><div class="sic" ${it.s?`style="color:${STAT_INFO[it.s].c}"`:''}>${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${S.bag[it.id]?`<small class="tiny">En la bolsa: ${S.bag[it.id]}</small>`:''}</div>
       <button class="btn sm gold" data-act="${it.kind==='portal'?'portal':'buy'}" data-v="${it.id}" ${c.ok?'':'disabled'} title="${c.ok?'':esc(c.why)}"><span class="price">${ic('two-coins')}${priceOf(S,it)}${it.kind==='portal'?'/día':''}</span></button></div>`; }).join('')}</section>
       <p class="tiny" style="margin:0 2px">Límites: 5 escudos y 2 Sellos por semana; un Refugio cada 2 semanas; 2 cofres por semana; una Llave Roja cada 2 meses. Estasis este año: ${estasisDaysYear(S, today().slice(0,4))} de ${ESTASIS_YEAR} días (Sellos, Refugios y Portales). Un día en estasis no existe para el juego: no hace falta marcar nada.</p>`;
   } else if (SHOPT==='rew') {
@@ -3969,7 +3972,14 @@ document.addEventListener('change', e=>{ const k = e.target.dataset.chg; if (!k 
   save(); render(); });
 // Lo que se sortea al pintar (Oferta del día, Mercader) se guarda al momento
 const _renderBase = render; render = function(){ _renderBase(); tintWins(); if (S && S.dirty) { delete S.dirty; save(); } };
-function tintWins(){ document.querySelectorAll('.win > .wh[style*="color"]').forEach(wh=>{ const c = wh.style.color; if (c) wh.parentElement.style.setProperty('--sys', c); }); }
+const SEC_C = {'Diarios de la semana':'#4fd2c8', 'Salas de la semana':'#3ddc97', 'Botín':'#f4c652', 'Golpes de la semana':'#ff8a3d', 'Incubadora':'#4fd2c8', 'Redil':'#3ddc97', 'Inventario':'#ffb35c', 'Estadísticas':'#3ddc97', 'Cómo funcionan':'#a98bff', 'Habilidades':'#c49bff', 'Recursos':'#f4c652', 'Objetos':'#4fd2c8', 'Catálogo del Sistema':'#5cb8ff', 'Bonus de set':'#ff8a3d', 'Destinos':'#a98bff'};
+const SEC_PAL = ['#5cb8ff','#3ddc97','#ffb35c','#ff7a9a','#a98bff','#4fd2c8','#f4c652','#ff8a3d'];
+function tintWins(){
+  document.querySelectorAll('.win > .wh').forEach(wh=>{ const w = wh.parentElement; let c = wh.style.color;
+    if (!c) { if (['gold','red','vio','block'].some(k=>w.classList.contains(k))) return; const t = (wh.querySelector('h2')||{}).textContent||''; if (!t) return;
+      c = SEC_C[t] || SEC_PAL[[...t].reduce((a,ch)=>a+ch.charCodeAt(0),0) % SEC_PAL.length]; wh.style.color = c; }
+    w.style.setProperty('--sys', c); });
+}
 function boot(){
   setInterval(tickTimers, 1000);
   S = lsGet(); if (S) afterLoad();
