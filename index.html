@@ -760,6 +760,10 @@ main{padding:4px 14px 20px}
 .otimer{font-size:11.5px; color:var(--tx3); font-variant-numeric:tabular-nums}
 .deal{--dc:#c49bff; background:linear-gradient(180deg, color-mix(in srgb, var(--dc) 10%, var(--panel)), var(--panel)) !important}
 .deal .wh{color:var(--dc) !important} .deal .sic{color:var(--dc) !important} .deal .btn{border-color:color-mix(in srgb, var(--dc) 60%, var(--line)); color:var(--dc)}
+
+/* v2.6.2 · colores coherentes en el Bazar */
+.win.deal{--sys:var(--dc)} .win.deal::before, .win.deal::after{border-color:var(--dc)} .deal .wh .ic{color:var(--dc)}
+.win.merch{--sys:var(--gold)} .win.merch::before, .win.merch::after{border-color:var(--gold)} .merch .wh .ic{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -3130,7 +3134,7 @@ function bagResources(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.2'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3647,11 +3651,11 @@ function armItemSheet(id){
 let EQT = 'arm';
 function eqTabs(){ return `<div class="seg subtabs" role="group" aria-label="Equipo"><button data-act="eqt" data-v="arm" aria-pressed="${EQT==='arm'}">${ic('crossed-swords')}Armería</button><button data-act="eqt" data-v="stats" aria-pressed="${EQT==='stats'}">${ic('upgrade')}Estadísticas${freePoints(S)>0?' <span class="badge">'+freePoints(S)+'</span>':''}</button><button data-act="eqt" data-v="runas" aria-pressed="${EQT==='runas'}">${ic('crystal-shine')}Runas</button></div>`; }
 function screenTienda(){
-  let html = `<div class="seg subtabs" role="group" aria-label="Tienda"><button data-act="shopt" data-v="obj" aria-pressed="${SHOPT==='obj'}">${ic('shopping-bag')}Bazar</button><button data-act="shopt" data-v="rew" aria-pressed="${SHOPT==='rew'}">${ic('present')}Recompensas</button><button data-act="shopt" data-v="bag" aria-pressed="${SHOPT==='bag'}">${ic('locked-chest')}Bolsa</button></div>
-    <div class="sys-title"><h1>${{obj:'Bazar del Sistema', rew:'Recompensas', bag:'Bolsa'}[SHOPT]}</h1></div>`;
+  let html = `<div class="seg subtabs" role="group" aria-label="Tienda"><button data-act="shopt" data-v="obj" aria-pressed="${SHOPT==='obj'}">${ic('shopping-bag')}Bazar</button><button data-act="shopt" data-v="rew" aria-pressed="${SHOPT==='rew'}">${ic('present')}Premios</button><button data-act="shopt" data-v="bag" aria-pressed="${SHOPT==='bag'}">${ic('locked-chest')}Bolsa</button></div>
+    <div class="sys-title"><h1>${{obj:'Bazar del Sistema', rew:'Premios reales', bag:'Bolsa'}[SHOPT]}</h1></div>`;
   if (SHOPT==='obj') {
     html += dealPanel() + merchPanel();
-    html += `<section class="win">${SHOP.filter(it=>!it.merch).map(it=>{ const c = canBuy(S,it); return `<div class="shop-item"><div class="sic" ${it.s?`style="color:${STAT_INFO[it.s].c}"`:''}>${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${S.bag[it.id]?`<small class="tiny">En la bolsa: ${S.bag[it.id]}</small>`:''}</div>
+    html += `<section class="win"><div class="wh">${ic('coins-pile')}<h2>Catálogo del Sistema</h2><span class="tiny">Siempre disponible</span></div>${SHOP.filter(it=>!it.merch).map(it=>{ const c = canBuy(S,it); return `<div class="shop-item"><div class="sic" ${it.s?`style="color:${STAT_INFO[it.s].c}"`:''}>${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${S.bag[it.id]?`<small class="tiny">En la bolsa: ${S.bag[it.id]}</small>`:''}</div>
       <button class="btn sm gold" data-act="${it.kind==='portal'?'portal':'buy'}" data-v="${it.id}" ${c.ok?'':'disabled'} title="${c.ok?'':esc(c.why)}"><span class="price">${ic('two-coins')}${priceOf(S,it)}${it.kind==='portal'?'/día':''}</span></button></div>`; }).join('')}</section>
       <p class="tiny" style="margin:0 2px">Límites: 5 escudos y 2 Sellos por semana; un Refugio cada 2 semanas; 2 cofres por semana; una Llave Roja cada 2 meses. Estasis este año: ${estasisDaysYear(S, today().slice(0,4))} de ${ESTASIS_YEAR} días (Sellos, Refugios y Portales). Un día en estasis no existe para el juego: no hace falta marcar nada.</p>`;
   } else if (SHOPT==='rew') {
