@@ -41,7 +41,7 @@
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 :root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + var(--hud-h))}
-html,body{margin:0; min-height:100%; background:var(--bg); color:var(--tx); font-family:var(--f-ui); font-size:15px; line-height:1.45}
+html,body{overflow-x:clip; margin:0; min-height:100%; background:var(--bg); color:var(--tx); font-family:var(--f-ui); font-size:15px; line-height:1.45}
 body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:60; background:var(--bg)}
 button{font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:0}
 button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--sys); outline-offset:2px}
@@ -750,6 +750,16 @@ main{padding:4px 14px 20px}
 .resgrid{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px}
 .res{display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 4px; border:1px solid var(--line); background:var(--panel)}
 .res .ic{font-size:22px} .res b{font-size:17px; font-variant-numeric:tabular-nums} .res small{font-size:10.5px; color:var(--tx3)}
+
+.gate-ov, .cine{overflow-x:hidden}
+.go-portal{position:absolute; left:50%; max-width:90vw; max-height:90vw}
+.gate-ov.open .btn.primary{background:linear-gradient(135deg, #ff5fa2, #9b5cff); color:#fff; border-color:transparent; box-shadow:0 0 18px rgba(255,80,160,.45)}
+.gate-ov.close .btn.primary{background:linear-gradient(135deg, #ffe08a, #f2b93b); color:#1a1200; border-color:transparent; box-shadow:0 0 18px rgba(244,198,82,.45)}
+/* Ofertas: compradas en gris y contadores discretos */
+.shop-item.sold{opacity:.45; filter:grayscale(.85)} .shop-item.sold .info b{text-decoration:line-through; text-decoration-thickness:1px}
+.otimer{font-size:11.5px; color:var(--tx3); font-variant-numeric:tabular-nums}
+.deal{--dc:#c49bff; background:linear-gradient(180deg, color-mix(in srgb, var(--dc) 10%, var(--panel)), var(--panel)) !important}
+.deal .wh{color:var(--dc) !important} .deal .sic{color:var(--dc) !important} .deal .btn{border-color:color-mix(in srgb, var(--dc) 60%, var(--line)); color:var(--dc)}
 </style>
 </head>
 <body>
@@ -2385,6 +2395,7 @@ function runeLootCards(l){
 // ---- Temporizadores ----
 function tickTimers(){
   document.querySelectorAll('.mtimer[data-dl]').forEach(el=>{ el.textContent = fmtLeft(+el.dataset.dl - Date.now()); });
+  document.querySelectorAll('.otimer[data-end]').forEach(el=>{ const left = +el.dataset.end - Date.now(); el.textContent = left<=0 ? 'Renovándose…' : el.dataset.pre + fmtLeft(left); });
   document.querySelectorAll('.etimer[data-end]').forEach(el=>{ const left = +el.dataset.end - Date.now(); el.textContent = left<=0 ? 'Han vuelto' : fmtLeft(left); });
 }
 
@@ -2626,14 +2637,14 @@ function migrate17(s){
 
 // ---- Interfaz: Mercader errante ----
 function merchPanel(){
-  const m = merchWeek(S); const left = (8 - dow(today())) % 7 || 7;
-  let h = `<section class="win gold merch"><div class="wh" style="color:var(--gold)">${ic('shopping-bag')}<h2>Mercader errante</h2><span class="tiny">Se va en ${left} ${left===1?'día':'días'}</span></div>
+  const m = merchWeek(S); const left = (8 - dow(today())) % 7 || 7; const end = dparse(addD(wstart(today()),7)).getTime();
+  let h = `<section class="win gold merch"><div class="wh" style="color:var(--gold)">${ic('shopping-bag')}<h2>Mercader errante</h2>${left<=1?`<span class="otimer" data-end="${end}" data-pre="Se va en ">Se va en ${fmtLeft(end-Date.now())}</span>`:`<span class="tiny">Se va en ${left} días</span>`}</div>
     <p class="tiny" style="margin:-4px 0 6px">${m.disc===0.5?'<b style="color:var(--gold)">Mercado Negro:</b> 5 ofertas al 50 % esta semana.':'Cada lunes trae 3 ofertas con un 25 % de descuento, una compra de cada.'}</p>`;
   for (const id of m.items) { const it = SHOP.find(x=>x.id===id); const full = priceOf(S,it); const p = it.nodisc ? full : Math.round(full*(m.disc||0.75)); const c = m.bought[id] ? {ok:false, why:'Comprado'} : canBuy(S,it,p);
-    h += `<div class="shop-item"><div class="sic gold">${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${m.bought[id]?'Comprado esta semana':esc(it.d)}</small></div>
-      <button class="btn sm gold" data-act="merch" data-v="${id}" ${c.ok?'':'disabled'} title="${c.ok?'':esc(c.why)}"><span class="price">${p<full?`<s class="tiny">${full}</s> `:''}${ic('two-coins')}${p}</span></button></div>`; }
+    h += `<div class="shop-item ${m.bought[id]?'sold':''}"><div class="sic gold">${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${m.bought[id]?'Comprado esta semana':esc(it.d)}</small></div>
+      <button class="btn sm gold" data-act="merch" data-v="${id}" ${c.ok?'':'disabled'} title="${c.ok?'':esc(c.why)}">${m.bought[id]?'✓ Comprado':`<span class="price">${p<full?`<s class="tiny">${full}</s> `:''}${ic('two-coins')}${p}</span>`}</button></div>`; }
   if (m.cos) { const [t,id] = m.cos; const pv = Object.assign({}, lookOf(S), {[t]:id});
-    h += `<div class="shop-item mcos"><div style="flex:none">${emblemHTML(pv, curRank(S), 'sm')}</div><div class="info"><b>${esc(COS[t][id].n)}</b><small>Cosmético exclusivo: solo lo vende el Mercader${m.bought.cos?' · comprado':''}</small></div>
+    h += `<div class="shop-item mcos ${m.bought.cos?'sold':''}"><div style="flex:none">${emblemHTML(pv, curRank(S), 'sm')}</div><div class="info"><b>${esc(COS[t][id].n)}</b><small>Cosmético exclusivo: solo lo vende el Mercader${m.bought.cos?' · comprado':''}</small></div>
       <button class="btn sm gold" data-act="merch" data-v="cos" ${m.bought.cos||S.gold<1000?'disabled':''}><span class="price">${ic('two-coins')}1.000</span></button></div>`; }
   return h + `</section>`;
 }
@@ -3027,10 +3038,11 @@ function dealPanel(){
   else if (dl.kind==='cos') { ico = emblemHTML(Object.assign({}, lookOf(S), {[dl.cos[0]]:dl.cos[1]}), curRank(S), 'sm'); name = COS[dl.cos[0]][dl.cos[1]].n; desc = 'Cosmético exclusivo'; full = 1000; }
   else { const it = SHOP.find(x=>x.id===dl.id); ico = ic(it.ic); name = it.n; desc = it.d; full = priceOf(S,it); }
   const half = (S.shopHalf||0) > 0;
-  return `<section class="win deal"><div class="wh" style="color:var(--sys)">${ic('sparkles')}<h2>Oferta del día</h2><span class="tiny">Cambia a medianoche</span></div>
+  const end = dparse(addD(today(),1)).getTime();
+  return `<section class="win deal"><div class="wh">${ic('sparkles')}<h2>Oferta del día</h2><span class="otimer" data-end="${end}" data-pre="Termina en ">Termina en ${fmtLeft(end-Date.now())}</span></div>
     ${half?`<p class="tiny" style="margin:-4px 0 6px; color:var(--gold)">Runa del Trueque activa: tu próxima compra cuesta la mitad.</p>`:''}
-    <div class="shop-item"><div class="sic" style="color:var(--sys)">${ico}</div><div class="info"><b>${esc(name)}</b><small>${dl.bought?'Comprada hoy':esc(desc)}</small></div>
-    <button class="btn sm" data-act="deal" ${dl.bought||S.gold<p?'disabled':''}><span class="price">${full?`<s class="tiny">${nf(full)}</s> `:''}${ic('two-coins')}${nf(p)}</span></button></div></section>`;
+    <div class="shop-item ${dl.bought?'sold':''}"><div class="sic">${ico}</div><div class="info"><b>${esc(name)}</b><small>${dl.bought?'Comprada hoy · vuelve otra mañana':esc(desc)}</small></div>
+    <button class="btn sm" data-act="deal" ${dl.bought||S.gold<p?'disabled':''}>${dl.bought?'✓ Comprada':`<span class="price">${full?`<s class="tiny">${nf(full)}</s> `:''}${ic('two-coins')}${nf(p)}</span>`}</button></div></section>`;
 }
 
 // ---- Piedra de Cobre ----
@@ -3118,7 +3130,7 @@ function bagResources(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.1'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
