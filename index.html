@@ -764,6 +764,16 @@ main{padding:4px 14px 20px}
 /* v2.6.2 · colores coherentes en el Bazar */
 .win.deal{--sys:var(--dc)} .win.deal::before, .win.deal::after{border-color:var(--dc)} .deal .wh .ic{color:var(--dc)}
 .win.merch{--sys:var(--gold)} .win.merch::before, .win.merch::after{border-color:var(--gold)} .merch .wh .ic{color:var(--gold)}
+
+/* v2.6.3 · colores por sección */
+.sys-title .sub.nowrap{display:inline-flex; align-items:center; gap:5px; white-space:nowrap} .sys-title .sub.nowrap .ic{font-size:16px; color:#b58cff} .sys-title .sub.nowrap b{color:var(--tx)}
+.ofr-l{display:flex; align-items:center; gap:5px; font-size:12px; color:var(--tx2); margin-top:5px} .ofr-l b{color:var(--tx)} .ofr-l .ic{font-size:14px; color:#ff6f91}
+.wh h2{color:inherit}
+.win.block[data-b="manana"]{--sys:#ffb35c} .win.block[data-b="mov"]{--sys:#3ddc97} .win.block[data-b="nutri"]{--sys:#ff7a9a} .win.block[data-b="noche"]{--sys:#a98bff}
+.win.block::before, .win.block::after{border-color:var(--sys)} .win.block .wh{color:var(--sys)} .win.block .wh .ic{color:var(--sys)}
+.win.block .hrow.on .hcheck{background:var(--sys); border-color:var(--sys)}
+.win.block .hcheck{border-color:color-mix(in srgb, var(--sys) 70%, transparent)}
+.win.block .btn{border-color:color-mix(in srgb, var(--sys) 55%, var(--line)); color:var(--sys)}
 </style>
 </head>
 <body>
@@ -2881,7 +2891,7 @@ const starsHTML = n => n ? `<span class="pstars">${'★'.repeat(n)}</span>` : ''
 let SANF = 'todo';
 function screenSantuario(){
   petInit(S); const act = activePets(S);
-  let html = `<div class="sys-title"><h1>Santuario</h1><span class="sub">${ic('round-potion')} ${S.bayas} Bayas Lunares</span></div>`;
+  let html = `<div class="sys-title"><h1>Santuario</h1><span class="sub nowrap">${ic('round-potion')}<b>${nf(S.bayas)}</b> Bayas Lunares</span></div>`;
   html += `<section class="win altar"><div class="wh" style="color:var(--vio)">${ic('crystal-shine')}<h2>Altar</h2><span class="prog">${act.length}/${petSlots(S)} activas</span></div>`;
   if (!act.length) html += `<p class="small muted">Aún no tienes mascotas. Incuba un huevo para que nazca la primera: los huevos caen de los jefes, de las expediciones y del Mercader.</p>`;
   html += `<div class="altar-row">${act.map(pi=>{ const P = PET[pi.id]; const goal = PET_FOOD[pi.stage];
@@ -2889,11 +2899,11 @@ function screenSantuario(){
       ${pi.stage<2?`<span class="ach-bar" style="--gold:var(--vio)"><i style="width:${pi.food/goal*100}%"></i></span><small class="tiny">${pi.food}/${goal} Bayas para ${PET_STAGE[pi.stage+1]}</small>`:''}</button>`; }).join('')}</div>`;
   if (act.some(pi=>pi.stage<2)) html += `<div class="row" style="justify-content:center; margin-top:8px">${act.filter(pi=>pi.stage<2).map(pi=>`<button class="btn vio sm" data-act="feed" data-v="${pi.uid}" ${S.bayas?'':'disabled'}>${ic('round-potion')}Dar Bayas a ${esc(PET[pi.id].n.split(' ')[0])}</button>`).join('')}</div>`;
   html += `</section>`;
-  html += ofrAltar();
   html += `<section class="win"><div class="wh">${ic('hourglass')}<h2>Incubadora</h2><span class="prog">${S.inc.length}/2</span></div><div class="incub">${[0,1].map(i=>{ const inc = S.inc[i];
     if (!inc) return `<div class="pod empty"><span class="pod-glass"></span><small>Vacía</small></div>`;
     const pr = incProgress(S,inc); const k = pr.cur/pr.need; const E = EGGS[inc.egg];
     return `<button class="pod ${k>=1?'ready':''}" data-act="${k>=1?'hatch':'incinfo'}" data-v="${inc.uid}"><span class="pod-glass"></span>${eggSVG(inc.egg, k)}<span class="ring" style="--p:${k*100}%"></span><b>${esc(inc.ev?EVENTS[inc.ev].n:E.n)}</b><small>${k>=1?'¡Listo para eclosionar!':pr.cur+'/'+pr.need+' · '+esc(E.how)}</small></button>`; }).join('')}</div></section>`;
+  html += ofrAltar();
   const fl = ['todo',...EGG_ORDER,'evento'];
   html += `<section class="win"><div class="wh">${ic('locked-chest')}<h2>Redil</h2><button class="btn sm" data-act="codex">${ic('spell-book')}Codex · ${Object.keys(S.codex||{}).length}/${PETS.length}</button></div>
     <div class="field" style="margin:0 0 6px"><label for="sanf">Mostrar</label><select id="sanf" data-chg="sanf">${fl.map(f=>`<option value="${f}" ${SANF===f?'selected':''}>${f==='todo'?'Todos los huevos':f==='evento'?'Huevos de evento':esc(EGGS[f].n)}</option>`).join('')}</select></div>`;
@@ -3114,8 +3124,9 @@ function ofrAltar(){
     <p class="tiny" style="margin:-4px 0 8px">Esquirlas y Ofrendas de cada evento: solo sirven para su mascota, al fusionarla.</p>
     ${evs.map(k=>{ const P = PETS.find(p=>p.ev===k); const own = S.pets.find(p=>p.id===P.id); const e = S.esq[k]||0, o = S.ofr[k]||0; const cps = Math.floor(e/5)+o;
       return `<div class="ofr-row">${own?petArt(own,'md'):`<span class="pet-sil">${ic(P.ic)}</span>`}<div style="flex:1; min-width:0"><b>${esc(EVENTS[k].n)}</b><small>${own?esc(P.n)+starsHTML(own.stars):'Nacerá del huevo de '+esc(BOSS[EVENTS[k].boss].n)}</small>
-        <div class="spread tiny" style="margin-top:4px"><span>${ic('crystal-shine')} ${e} Esquirlas · siguiente copia ${e%5}/5</span><span>${ic('present')} ${o} ${o===1?'Ofrenda':'Ofrendas'}</span></div>
-        <span class="ach-bar" style="--gold:#ff6f91"><i style="width:${(e%5)/5*100}%"></i></span></div>
+        <div class="ofr-l">${ic('crystal-shine')} <b>${e}</b> Esquirlas · ${e%5}/5 para la siguiente copia</div>
+        <span class="ach-bar" style="--gold:#ff6f91"><i style="width:${(e%5)/5*100}%"></i></span>
+        <div class="ofr-l">${ic('present')} <b>${o}</b> ${o===1?'Ofrenda':'Ofrendas'}</div></div>
         <span class="ofr-c ${own&&cps?'on':''}" title="Copias disponibles">${cps}</span></div>`; }).join('')}
   </section>`;
 }
@@ -3134,7 +3145,7 @@ function bagResources(){
 }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.2'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.3'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3655,7 +3666,7 @@ function screenTienda(){
     <div class="sys-title"><h1>${{obj:'Bazar del Sistema', rew:'Premios reales', bag:'Bolsa'}[SHOPT]}</h1></div>`;
   if (SHOPT==='obj') {
     html += dealPanel() + merchPanel();
-    html += `<section class="win"><div class="wh">${ic('coins-pile')}<h2>Catálogo del Sistema</h2><span class="tiny">Siempre disponible</span></div>${SHOP.filter(it=>!it.merch).map(it=>{ const c = canBuy(S,it); return `<div class="shop-item"><div class="sic" ${it.s?`style="color:${STAT_INFO[it.s].c}"`:''}>${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${S.bag[it.id]?`<small class="tiny">En la bolsa: ${S.bag[it.id]}</small>`:''}</div>
+    html += `<section class="win"><div class="wh">${ic('coins-pile')}<h2>Catálogo del Sistema</h2><span class="tiny">Siempre disponible</span></div>${SHOP.filter(it=>!it.merch).slice().sort((a,b)=>priceOf(S,b)-priceOf(S,a)).map(it=>{ const c = canBuy(S,it); return `<div class="shop-item"><div class="sic" ${it.s?`style="color:${STAT_INFO[it.s].c}"`:''}>${ic(it.ic)}</div><div class="info"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${S.bag[it.id]?`<small class="tiny">En la bolsa: ${S.bag[it.id]}</small>`:''}</div>
       <button class="btn sm gold" data-act="${it.kind==='portal'?'portal':'buy'}" data-v="${it.id}" ${c.ok?'':'disabled'} title="${c.ok?'':esc(c.why)}"><span class="price">${ic('two-coins')}${priceOf(S,it)}${it.kind==='portal'?'/día':''}</span></button></div>`; }).join('')}</section>
       <p class="tiny" style="margin:0 2px">Límites: 5 escudos y 2 Sellos por semana; un Refugio cada 2 semanas; 2 cofres por semana; una Llave Roja cada 2 meses. Estasis este año: ${estasisDaysYear(S, today().slice(0,4))} de ${ESTASIS_YEAR} días (Sellos, Refugios y Portales). Un día en estasis no existe para el juego: no hace falta marcar nada.</p>`;
   } else if (SHOPT==='rew') {
@@ -3671,8 +3682,7 @@ function screenTienda(){
     const ids = Object.keys(S.bag).filter(k=>S.bag[k]>0);
     html += bagResources();
     html += `<section class="win"><div class="wh">${ic('locked-chest')}<h2>Objetos</h2></div>${ids.length?ids.map(id=>{ const it = SHOP.find(x=>x.id===id); return `<div class="shop-item"><div class="sic">${ic(it.ic)}</div><div class="info"><b>${esc(it.n)} × ${S.bag[id]}</b><small>${esc(it.d)}</small></div>${id==='cobre'?'<button class="btn sm vio" data-act="cobre">Usar</button>':''}</div>`; }).join(''):'<div class="empty">No tienes objetos guardados. Se compran en el Bazar.</div>'}
-      ${ids.length?`<button class="btn vio wide" data-act="usesheet" style="margin-top:10px">Usar un objeto</button>`:''}</section>
-      <section class="win"><div class="wh">${ic('bottled-shadow')}<h2>Materiales</h2></div><p class="small" style="margin:0">Fragmentos de Sombra: <b>${S.frags}</b> · Llaves Rojas: <b>${S.keys}</b> · Esencia: <b>${S.ess}</b> · Núcleos: <b>${S.cores}</b></p></section>`;
+      ${ids.length?`<button class="btn vio wide" data-act="usesheet" style="margin-top:10px">Usar un objeto</button>`:''}</section>`;
   }
   return html;
 }
@@ -3958,7 +3968,8 @@ document.addEventListener('change', e=>{ const k = e.target.dataset.chg; if (!k 
   if (k==='title') S.title = e.target.value; if (k==='theme') { S.theme = e.target.value; applyTheme(); } if (k==='name') S.name = e.target.value.trim() || S.name;
   save(); render(); });
 // Lo que se sortea al pintar (Oferta del día, Mercader) se guarda al momento
-const _renderBase = render; render = function(){ _renderBase(); if (S && S.dirty) { delete S.dirty; save(); } };
+const _renderBase = render; render = function(){ _renderBase(); tintWins(); if (S && S.dirty) { delete S.dirty; save(); } };
+function tintWins(){ document.querySelectorAll('.win > .wh[style*="color"]').forEach(wh=>{ const c = wh.style.color; if (c) wh.parentElement.style.setProperty('--sys', c); }); }
 function boot(){
   setInterval(tickTimers, 1000);
   S = lsGet(); if (S) afterLoad();
