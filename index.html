@@ -715,6 +715,41 @@ main{padding:4px 14px 20px}
 
 .deal{background:linear-gradient(180deg, color-mix(in srgb, var(--sys) 9%, var(--panel)), var(--panel))} .deal .price s{opacity:.6}
 .wk i.ok.lib{background:repeating-linear-gradient(45deg, var(--ok), var(--ok) 3px, color-mix(in srgb, var(--ok) 60%, transparent) 3px, color-mix(in srgb, var(--ok) 60%, transparent) 6px)}
+
+/* ---------- v2.6 · Grieta ---------- */
+.gate-ov{position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:18px; overflow:auto; animation:goIn .9s ease both}
+.gate-ov.out{animation:goOut .45s ease forwards}
+@keyframes goIn{from{opacity:0; backdrop-filter:blur(0)} to{opacity:1}} @keyframes goOut{to{opacity:0}}
+.gate-ov{backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px)}
+.gate-ov.open{background:radial-gradient(ellipse at 50% 30%, rgba(70,20,90,.96), rgba(30,4,18,.97) 45%, rgba(4,2,10,.99) 75%)}
+.gate-ov.close{background:radial-gradient(ellipse at 50% 30%, rgba(18,40,80,.97), rgba(4,8,18,.99) 70%)}
+.go-in{position:relative; z-index:2; width:min(440px,100%); text-align:center}
+.go-in > *{opacity:0; animation:goRise .7s ease forwards} .go-in > *:nth-child(1){animation-delay:.3s} .go-in > *:nth-child(2){animation-delay:.6s} .go-in > *:nth-child(3){animation-delay:.9s} .go-in > *:nth-child(4){animation-delay:1.15s} .go-in > *:nth-child(5){animation-delay:1.4s} .go-in > *:nth-child(n+6){animation-delay:1.65s}
+@keyframes goRise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+.go-k{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--tx2)}
+.go-t{font-family:var(--f-ep); font-size:28px; margin:6px 0 14px; line-height:1.15}
+.gate-ov.open .go-t{color:#ff9ad0; text-shadow:0 0 18px rgba(255,60,140,.6)}
+.gate-ov.close .go-t{color:var(--gold); text-shadow:0 0 16px color-mix(in srgb, var(--gold) 50%, transparent)}
+.go-portal{position:fixed; left:50%; top:32%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:conic-gradient(from 0deg, transparent, rgba(255,60,140,.35), transparent 30%, rgba(152,119,255,.4), transparent 60%, rgba(255,60,140,.3), transparent); filter:blur(18px); animation:spin 14s linear infinite, goBeat 3.2s ease-in-out infinite; z-index:1}
+@keyframes goBeat{0%,100%{opacity:.55; scale:1} 50%{opacity:.9; scale:1.08}}
+.go-th{display:flex; flex-direction:column; align-items:center; gap:2px; margin:0 0 12px} .go-th b{font-size:15px} .go-th small{font-size:12px; color:var(--tx2)} .go-th .ic{font-size:26px; color:#ff9ad0}
+.go-boss{display:flex; gap:12px; align-items:center; padding:12px; margin:0 0 10px; border:1px solid rgba(255,60,140,.45); background:rgba(20,6,20,.6)}
+.go-boss b{display:block; font-family:var(--f-ep); font-size:17px} .go-boss small{font-size:12px; color:var(--tx2)}
+.go-msg{font-size:14px; color:#ffd1e6; margin:6px 0 16px}
+.gc-res{display:flex; align-items:center; justify-content:center; gap:6px; font-weight:700; font-size:15px; margin:0 0 12px} .gc-res.ok{color:var(--gold)} .gc-res.bad{color:var(--red)}
+.gc-grid{grid-template-columns:repeat(3,1fr) !important; text-align:center; margin:0 0 6px}
+.gc-row{display:flex; justify-content:space-between; gap:10px; padding:7px 2px; border-top:1px solid var(--line); font-size:13px; text-align:left}
+.gc-row span:first-child{display:flex; align-items:center; gap:6px; color:var(--tx2)} .gc-l{display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; font-variant-numeric:tabular-nums}
+.gc-row.total{font-weight:700} .gc-row.total span:first-child{color:var(--tx)}
+/* Altar de Ofrendas y Bolsa */
+.ofr{background:linear-gradient(180deg, color-mix(in srgb, #ff6f91 8%, var(--panel)), var(--panel))}
+.ofr-row{display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line)} .ofr-row:first-of-type{border-top:0}
+.ofr-row b{display:block; font-size:14px} .ofr-row small{display:block; font-size:11.5px; color:var(--tx2)}
+.ofr-c{flex:none; min-width:30px; height:30px; display:grid; place-items:center; border-radius:50%; border:1px solid var(--line); font-weight:700; color:var(--tx3)} .ofr-c.on{border-color:#ff6f91; color:#ff6f91; box-shadow:0 0 10px rgba(255,111,145,.5)}
+.pcopy{position:absolute; top:4px; right:4px; z-index:5; min-width:18px; height:18px; padding:0 4px; display:grid; place-items:center; border-radius:9px; background:var(--gold); color:#1a1200; font-size:11px; font-weight:800}
+.resgrid{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px}
+.res{display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 4px; border:1px solid var(--line); background:var(--panel)}
+.res .ic{font-size:22px} .res b{font-size:17px; font-variant-numeric:tabular-nums} .res small{font-size:10.5px; color:var(--tx3)}
 </style>
 </head>
 <body>
@@ -1302,7 +1337,8 @@ function spendPoints(s, alloc){ const n = Object.values(alloc).reduce((a,b)=>a+b
 const invGet = (s,uid) => s.inv.find(x=>x.uid===uid);
 const day = (s,d) => s.days[d] || (s.days[d] = {c:{}, xp:{}, g:{}, t:{}, sub:{}, sh:{}, bonus:{xp:0,gold:0,sx:{}}});
 const dayR = (s,d) => s.days[d];
-function addGold(s, n, src){ n = Math.round(n); if (!n) return 0; s.gold += n; if (n>0) s.goldLog.push([today(), n, src]); if (s.goldLog.length>400) s.goldLog = s.goldLog.slice(-300); return n; }
+function wledger(s, src){ const ws = s._lootWs || wstart(today()); s.wl = s.wl || {}; const W = s.wl[ws] = s.wl[ws] || {}; const keys = Object.keys(s.wl).sort(); if (keys.length > 10) delete s.wl[keys[0]]; return W[src] = W[src] || {}; }
+function addGold(s, n, src){ n = Math.round(n); if (!n) return 0; s.gold += n; if (n>0 && (src==='act' || src==='lvl')) { const L = wledger(s, src==='act'?'Hábitos':'Niveles'); L.gold = (L.gold||0) + n; } if (n>0) s.goldLog.push([today(), n, src]); if (s.goldLog.length>400) s.goldLog = s.goldLog.slice(-300); return n; }
 function pushLog(s, msg){ s.log.unshift([Date.now(), msg]); if (s.log.length>60) s.log.length = 60; }
 
 // ---- Nivel y rango ----
@@ -1680,12 +1716,16 @@ function lootBosses(s, w){
   const pb = 1 + petSum(s,'bossLoot')/100; loot.gold = Math.round((loot.gold||0)*pb); loot.cores = Math.round((loot.cores||0)*pb);
   return grantLoot(s, loot, 'Jefe');
 }
+function ledgerLoot(s, loot, src){ const L = wledger(s, src); const add = (k,v) => { if (v) L[k] = (L[k]||0) + v; };
+  add('gold', loot.gold); add('ess', loot.ess); add('cores', loot.cores); add('bayas', loot.bayas); add('frags', loot.frags); add('keys', loot.keys);
+  add('items', (loot.items||[]).length); add('runes', (loot.runes||[]).length); add('eggs', (loot.eggs||[]).length); }
 function grantLoot(s, loot, src){
   if (loot.ess && s.pets) loot.ess = Math.round(loot.ess*(1+petSum(s,'ess')/100));
   addGold(s, loot.gold||0, src==='AFK'?'afk':'loot'); s.cores += loot.cores||0; s.keys += loot.keys||0; s.frags += loot.frags||0; s.ess += loot.ess||0;
   loot.uids = (loot.items||[]).map(id => addItem(s,id));
   loot.runeRes = (loot.runes||[]).map(id => learnRune(s,id));
   for (const g of loot.eggs||[]) addEgg(s, g.egg, g.ev);
+  ledgerLoot(s, loot, src);
   for (const t of loot.titles||[]) if (!s.titles.includes(t)) s.titles.push(t);
   return loot;
 }
@@ -1719,14 +1759,14 @@ function syncWeeks(s, events){
       if (!w.event && w.special!=='horda' && !w.claimed) { const old = w.bosses[0]; if (old && !old.fug) { (s.bags['r'+w.rank] = s.bags['r'+w.rank]||[]).push(old.id); w.bosses[0] = {id:fug.id, fug:true}; if (w.special==='elite') w.bosses[0].weak2 = pick(STATS.filter(x=>x!==BOSS[fug.id].weak)); } }
       fug = null; }
     if (addD(ws,6) <= st && !w.resolved) {
-      const b = battle(s, ws);
+      s._lootWs = ws; const b = battle(s, ws);
       if (w.special!=='horda' && b && !w.claimed) {
         if (b.allDead) { const l = lootBosses(s,w); w.claimed = true; events.push({type:'boss', loot:l, w}); }
         else if (!w.event && !inEstasisWeek(s,ws)) { const alive = w.bosses.find((x,i)=>!b.bosses[i].dead); if (alive) { fug = {id:alive.id}; events.push({type:'fug', boss:alive.id}); } }
       }
       if (weekPerfect(s, ws)) { const l = grantLoot(s, {gold:Math.round(50*goldMul(s,ws)), frags:1, cores:1, items:[rollPiece(s, rollRar(w.rank,1))], runes: Math.random()<0.3 ? [rollRune()] : [], titles: s.titles.includes('perfecta')?[]:['perfecta']}, 'Semana');
         events.push({type:'perfect', loot:l}); }
-      w.resolved = true;
+      w.resolved = true; delete s._lootWs; if (ws >= wstart(s.start)) events.push({type:'gateClose', ws});
     }
     ws = addD(ws,7);
   }
@@ -2285,10 +2325,11 @@ function missionAlert(m){
   document.body.appendChild(c);
 }
 function maybeMissionAlert(){
-  if (!S || TAB!=='hoy' || $('#malert') || $('#cine') || $('#sheet') || SHOWING) return;
+  if (!S || TAB!=='hoy' || $('#malert') || $('#cine') || $('#sheet') || $('#gateov') || SHOWING) return;
+  if (maybeGateOpen()) return;
   if (maybePrep()) return;
   const m = todayMission(S); if (!m || m.st!=='new' || ALERTED[m.d]) return;
-  ALERTED[m.d] = 1; setTimeout(()=>{ if (!$('#malert') && !$('#cine') && !$('#sheet')) missionAlert(m); else ALERTED[m.d] = 0; }, 450);
+  ALERTED[m.d] = 1; setTimeout(()=>{ if (!$('#malert') && !$('#cine') && !$('#sheet') && !$('#gateov') && !SHOWING) missionAlert(m); else ALERTED[m.d] = 0; }, 450);
 }
 
 // ---- Expediciones ----
@@ -2364,7 +2405,7 @@ function maybePrep(){
   if (!S || TAB!=='hoy' || !isMonday() || $('#malert') || $('#cine') || $('#sheet') || SHOWING) return false;
   const rw = runeWeek(S); if (rw.prep) return false;
   const learned = RUNES.filter(R=>runeLevel(S,R.id)).length; if (learned <= runeSlots(S)) { rw.prep = true; return false; }
-  rw.prep = true; save(); setTimeout(()=>openSheet(prepSheet()), 500); return true;
+  rw.prep = true; save(); return false;
 }
 
 // ===================== ARISE v1.6 · LOGROS Y APARIENCIA =====================
@@ -2833,16 +2874,17 @@ function screenSantuario(){
       ${pi.stage<2?`<span class="ach-bar" style="--gold:var(--vio)"><i style="width:${pi.food/goal*100}%"></i></span><small class="tiny">${pi.food}/${goal} Bayas para ${PET_STAGE[pi.stage+1]}</small>`:''}</button>`; }).join('')}</div>`;
   if (act.some(pi=>pi.stage<2)) html += `<div class="row" style="justify-content:center; margin-top:8px">${act.filter(pi=>pi.stage<2).map(pi=>`<button class="btn vio sm" data-act="feed" data-v="${pi.uid}" ${S.bayas?'':'disabled'}>${ic('round-potion')}Dar Bayas a ${esc(PET[pi.id].n.split(' ')[0])}</button>`).join('')}</div>`;
   html += `</section>`;
+  html += ofrAltar();
   html += `<section class="win"><div class="wh">${ic('hourglass')}<h2>Incubadora</h2><span class="prog">${S.inc.length}/2</span></div><div class="incub">${[0,1].map(i=>{ const inc = S.inc[i];
     if (!inc) return `<div class="pod empty"><span class="pod-glass"></span><small>Vacía</small></div>`;
     const pr = incProgress(S,inc); const k = pr.cur/pr.need; const E = EGGS[inc.egg];
     return `<button class="pod ${k>=1?'ready':''}" data-act="${k>=1?'hatch':'incinfo'}" data-v="${inc.uid}"><span class="pod-glass"></span>${eggSVG(inc.egg, k)}<span class="ring" style="--p:${k*100}%"></span><b>${esc(inc.ev?EVENTS[inc.ev].n:E.n)}</b><small>${k>=1?'¡Listo para eclosionar!':pr.cur+'/'+pr.need+' · '+esc(E.how)}</small></button>`; }).join('')}</div></section>`;
   const fl = ['todo',...EGG_ORDER,'evento'];
   html += `<section class="win"><div class="wh">${ic('locked-chest')}<h2>Redil</h2><button class="btn sm" data-act="codex">${ic('spell-book')}Codex · ${Object.keys(S.codex||{}).length}/${PETS.length}</button></div>
-    <div class="filters fgrid">${fl.map(f=>`<button data-act="sanf" data-v="${f}" aria-pressed="${SANF===f}">${f==='todo'?ic('locked-chest'):eggSVG(f,0,'mini')}<span>${f==='todo'?'Todo':f==='evento'?'Evento':EGGS[f].n.replace(/Huevo (del |de |)/,'')}</span></button>`).join('')}</div>`;
+    <div class="field" style="margin:0 0 6px"><label for="sanf">Mostrar</label><select id="sanf" data-chg="sanf">${fl.map(f=>`<option value="${f}" ${SANF===f?'selected':''}>${f==='todo'?'Todos los huevos':f==='evento'?'Huevos de evento':esc(EGGS[f].n)}</option>`).join('')}</select></div>`;
   const eggs = S.eggs.filter(e=>SANF==='todo'||e.egg===SANF); const pets = S.pets.filter(p=>SANF==='todo'||PET[p.id].egg===SANF);
   html += eggs.length ? `<div class="tier-h"><h3>Huevos</h3><span class="tiny">${eggs.length}</span></div><div class="pgrid">${eggs.map(e=>`<button class="ptile" data-act="egg" data-v="${e.uid}">${eggSVG(e.egg,0)}<small>${esc(e.ev?EVENTS[e.ev].n:EGGS[e.egg].n)}</small></button>`).join('')}</div>` : '';
-  html += pets.length ? `<div class="tier-h"><h3>Mascotas</h3><span class="tiny">${pets.length}</span></div><div class="pgrid">${pets.map(pi=>`<button class="ptile ${S.petAct.includes(pi.uid)?'on':''}" data-act="pet" data-v="${pi.uid}" style="--rc:${RAR_P[PET[pi.id].rar].col}">${petArt(pi,'md')}<small>${esc(PET[pi.id].n)}${starsHTML(pi.stars)}</small><span class="tiny">${PET_STAGE[pi.stage]}</span></button>`).join('')}</div>` : '';
+  html += pets.length ? `<div class="tier-h"><h3>Mascotas</h3><span class="tiny">${pets.length}</span></div><div class="pgrid">${pets.map(pi=>`<button class="ptile ${S.petAct.includes(pi.uid)?'on':''}" data-act="pet" data-v="${pi.uid}" style="--rc:${RAR_P[PET[pi.id].rar].col}">${(pi.stars||0)<3 && petCopies(pi)>0 ? `<span class="pcopy" title="Copias para fusionar">${petCopies(pi)}</span>` : ''}${petArt(pi,'md')}<small>${esc(PET[pi.id].n)}${starsHTML(pi.stars)}</small><span class="tiny">${PET_STAGE[pi.stage]}</span></button>`).join('')}</div>` : '';
   if (!eggs.length && !pets.length) html += `<p class="small muted">Nada por aquí todavía.</p>`;
   html += `</section>`;
   return html;
@@ -3001,8 +3043,82 @@ function cobreSheet(){
     ${own.length ? `<div class="steam">${own.map(R=>{ const lv = runeLevel(S,R.id); const r = S.runes[R.id]; return `<button class="schip" data-act="cobreuse" data-v="${R.id}" ${lv>=3?'disabled':''} style="--vio:${R.gc}"><span class="sfig" style="width:40px; height:48px">${runeSVG(R.id,true)}</span><span><b>${esc(R.n)} · nivel ${['I','II','III'][lv-1]}</b><small>${lv>=3?'Nivel máximo':`${r.cnt} piedras · siguiente nivel con ${lv===1?3:6}`}</small></span></button>`; }).join('')}</div>` : '<p class="small">Aún no tienes runas de evento: se consiguen derrotando al jefe de cada evento.</p>'}`;
 }
 
+// ===================== ARISE v2.6 · RESÚMENES DE GRIETA, ALTAR DE OFRENDAS Y BOLSA =====================
+const TRAIT_N = {piedra:'Piel de piedra', regen:'Regeneración', caparazon:'Caparazón', escudo:'Escudo arcano'};
+const LEDGER_SRC = [['Hábitos','scroll-unfurled'],['Sala','locked-chest'],['Jefe','crossed-swords'],['Semana','laurel-crown'],['Mision','alarm-clock'],['Exped','treasure-map'],['AFK','two-shadows'],['Niveles','upgrade'],['Rango','jewel-crown'],['Cofre','open-treasure-chest'],['Roja','magic-portal']];
+const LEDGER_N = {Hábitos:'Hábitos', Sala:'Salas limpias', Jefe:'Jefe', Semana:'Semana perfecta', Mision:'Misiones urgentes', Exped:'Expediciones', AFK:'Sombras (AFK)', Niveles:'Subidas de nivel', Rango:'Ascenso de rango', Cofre:'Cofres del Mercader', Roja:'Puerta Roja'};
+const lootTxt = L => [L.gold?ic('two-coins')+nf(L.gold):'', L.ess?ic('chemical-drop')+L.ess:'', L.cores?ic('crystal-shine')+L.cores:'', L.bayas?ic('round-potion')+L.bayas:'', L.frags?ic('bottled-shadow')+L.frags:'', L.items?ic('swords-emblem')+L.items:'', L.runes?ic('rune-stone')+L.runes:'', L.eggs?ic('egg-clutch')+L.eggs:'', L.keys?ic('skeleton-key')+L.keys:''].filter(Boolean).join(' ');
+
+// ---- Lunes: se ha abierto una nueva Grieta ----
+function gateOpenHTML(ws){
+  const w = S.weeks[ws]; const b = battle(S, ws); const th = w.event ? EVENTS[w.event] : w.theme ? THEMES[w.theme] : null;
+  const bosses = (b ? b.bosses : []).map(x=>{ const B = BOSS[x.id]; const m = bossMods(x.id);
+    return `<div class="go-boss"><div class="bport" style="width:76px; height:76px">${bossArt(B.ic)}</div><div style="text-align:left; min-width:0"><b>${esc(B.n)}${x.fug?' · Fugado':''}</b>
+      <small>Rango ${B.rank>=0?RANKS[B.rank]:'Evento'} · ${nf(x.hp)} de vida</small>
+      <div class="chips" style="margin-top:4px">${B.weak?`<span class="chip" style="color:var(--ok)">Débil a ${B.weak}</span>`:''}${m.res?`<span class="chip" style="color:var(--red)">Resiste ${m.res}</span>`:''}${m.tr?`<span class="chip" style="color:var(--gold)">${TRAIT_N[m.tr]}</span>`:''}</div></div></div>`; }).join('');
+  const sp = w.special && SPECIALS[w.special];
+  return `<div class="gate-ov open" id="gateov"><div class="go-portal"></div><div class="go-in">
+    <div class="go-k">Semana del ${esc(weekLabelShort(ws))}</div><h2 class="go-t">Se ha abierto una nueva Grieta</h2>
+    ${th?`<div class="go-th">${ic(th.ic)} <b>${esc(th.n)}</b><small>${esc(th.d)}</small></div>`:''}${sp?`<div class="go-th">${ic(sp.ic||'crossed-swords')} <b>${esc(sp.n)}</b><small>${esc(sp.d||'')}</small></div>`:''}
+    ${bosses || '<p class="small">Esta semana no hay jefe: la horda espera en las salas.</p>'}
+    <p class="go-msg">Prepárate, cazador: revisa tus runas y tu equipo antes de entrar.</p>
+    <button class="btn primary wide" data-act="gateok">Entrar en la Grieta</button></div></div>`;
+}
+const weekLabelShort = ws => { const a = dparse(ws), b2 = dparse(addD(ws,6)); return `${a.getDate()} al ${b2.getDate()} de ${MON[b2.getMonth()]}`; };
+// ---- Martes: la Grieta se ha cerrado ----
+function gateCloseHTML(ws){
+  const w = S.weeks[ws]; const x = weekSummary(S, ws); const b = x.b; const W = (S.wl||{})[ws] || {};
+  let res = '';
+  if (w && w.special==='horda') res = `<div class="gc-res ok">${ic('crossed-swords')} Semana de horda superada</div>`;
+  else if (x.result==='muerto') res = `<div class="gc-res ok">${ic('laurel-crown')} Jefe derrotado el ${esc(dLabel(x.deadOn).split(' ').slice(0,1).join(''))}</div>`;
+  else if (b) { const tot = b.bosses.reduce((a,y)=>a+y.hp,0), dmg = b.bosses.reduce((a,y)=>a+Math.min(y.hp,y.dmg),0); res = `<div class="gc-res bad">${ic('run')} El jefe escapó con ${nf(tot-dmg)} de vida</div>`; }
+  const dmgLine = b ? (()=>{ const tot = b.bosses.reduce((a,y)=>a+y.hp,0), dmg = b.bosses.reduce((a,y)=>a+Math.min(y.hp,y.dmg),0); return `<div><b>${nf(dmg)}</b><small>de ${nf(tot)} de daño</small></div>`; })() : '';
+  const rows = LEDGER_SRC.filter(([k])=>W[k] && lootTxt(W[k])).map(([k,icn])=>`<div class="gc-row"><span>${ic(icn)} ${LEDGER_N[k]}</span><span class="gc-l">${lootTxt(W[k])}</span></div>`).join('');
+  const tot = {}; for (const k in W) for (const r in W[k]) tot[r] = (tot[r]||0) + W[k][r];
+  return `<div class="gate-ov close" id="gateov"><div class="go-in">
+    <div class="go-k">Semana del ${esc(weekLabelShort(ws))}</div><h2 class="go-t">La Grieta se ha cerrado</h2>${res}
+    <div class="chron-grid gc-grid">${dmgLine}<div><b>${x.pct} %</b><small>de la semana</small></div><div><b>${x.rooms}/${x.act}</b><small>salas limpias</small></div><div><b>${x.qDone}/${x.qExp}</b><small>cupos</small></div><div><b>${nf(x.xp)}</b><small>XP</small></div><div><b>${x.perfect?'⭐ Sí':'No'}</b><small>perfecta</small></div></div>
+    <div class="tier-h"><h3>Botín de la semana</h3></div>${rows||'<p class="small muted">Sin botín registrado esta semana.</p>'}
+    ${rows?`<div class="gc-row total"><span>Total</span><span class="gc-l">${lootTxt(tot)}</span></div>`:''}
+    <button class="btn primary wide" data-act="gateok" style="margin-top:14px">Continuar</button></div></div>`;
+}
+function showGate(html){ if ($('#gateov')) return; document.body.insertAdjacentHTML('beforeend', html); SHOWING = true; }
+function maybeGateOpen(){
+  if (!S || TAB!=='hoy' || $('#gateov') || $('#malert') || $('#cine') || $('#sheet') || SHOWING || QUEUE.length) return false;
+  const ws = wstart(today()); const w = S.weeks[ws]; if (!w || ws < wstart(S.start)) return false;
+  S.gateOpen = S.gateOpen || {}; if (S.gateOpen[ws]) return false;
+  S.gateOpen[ws] = 1; save(); SHOWING = true;
+  setTimeout(()=>{ if ($('#gateov') || $('#cine') || $('#malert') || QUEUE.length) { S.gateOpen[ws] = 0; SHOWING = !!($('#gateov') || $('#cine')); return; } showGate(gateOpenHTML(ws)); }, 350); return true;
+}
+
+// ---- Santuario: Altar de Ofrendas ----
+function ofrAltar(){
+  petInit(S); const evs = Object.keys(EVENTS).filter(k=>(S.esq[k]||0)>0 || (S.ofr[k]||0)>0); if (!evs.length) return '';
+  return `<section class="win ofr"><div class="wh" style="color:#ff6f91">${ic('present')}<h2>Altar de Ofrendas</h2></div>
+    <p class="tiny" style="margin:-4px 0 8px">Esquirlas y Ofrendas de cada evento: solo sirven para su mascota, al fusionarla.</p>
+    ${evs.map(k=>{ const P = PETS.find(p=>p.ev===k); const own = S.pets.find(p=>p.id===P.id); const e = S.esq[k]||0, o = S.ofr[k]||0; const cps = Math.floor(e/5)+o;
+      return `<div class="ofr-row">${own?petArt(own,'md'):`<span class="pet-sil">${ic(P.ic)}</span>`}<div style="flex:1; min-width:0"><b>${esc(EVENTS[k].n)}</b><small>${own?esc(P.n)+starsHTML(own.stars):'Nacerá del huevo de '+esc(BOSS[EVENTS[k].boss].n)}</small>
+        <div class="spread tiny" style="margin-top:4px"><span>${ic('crystal-shine')} ${e} Esquirlas · siguiente copia ${e%5}/5</span><span>${ic('present')} ${o} ${o===1?'Ofrenda':'Ofrendas'}</span></div>
+        <span class="ach-bar" style="--gold:#ff6f91"><i style="width:${(e%5)/5*100}%"></i></span></div>
+        <span class="ofr-c ${own&&cps?'on':''}" title="Copias disponibles">${cps}</span></div>`; }).join('')}
+  </section>`;
+}
+const petCopies = pi => copiesOf(S, pi).length + (PET[pi.id].ev ? Math.floor((S.esq[PET[pi.id].ev]||0)/5) + (S.ofr[PET[pi.id].ev]||0) : 0);
+
+// ---- Bolsa: recursos y efectos activos ----
+function bagResources(){
+  petInit(S); const res = [['two-coins','Oro',nf(S.gold),'var(--gold)'],['chemical-drop','Esencia',S.ess,'var(--vio)'],['crystal-shine','Núcleos',S.cores,'var(--sys)'],['bottled-shadow','Fragmentos',S.frags,'var(--vio)'],['skeleton-key','Llaves Rojas',S.keys,'var(--red)'],['round-potion','Bayas Lunares',S.bayas,'#b58cff']];
+  const now = Date.now(); const fx = [];
+  if ((S.compass||0)>0) fx.push(`${ic('compass')} Brújula lista (${S.compass})`);
+  if (S.incense && S.incense > now) fx.push(`${ic('flame')} Incienso: ${Math.ceil((S.incense-now)/3600e3)} h`);
+  if (S.afkBoost && S.afkBoost > now) fx.push(`${ic('two-shadows')} Ánimas: ${Math.ceil((S.afkBoost-now)/3600e3)} h`);
+  if ((S.shopHalf||0)>0) fx.push(`${ic('present')} Trueque: ${S.shopHalf} ${S.shopHalf===1?'compra':'compras'} a mitad`);
+  return `<section class="win"><div class="wh">${ic('coins-pile')}<h2>Recursos</h2></div><div class="resgrid">${res.map(([i,n,v,c])=>`<div class="res"><span style="color:${c}">${ic(i)}</span><b>${v}</b><small>${n}</small></div>`).join('')}</div>
+    ${fx.length?`<div class="chips" style="margin-top:10px">${fx.map(f=>`<span class="chip" style="color:var(--sys)">${f}</span>`).join('')}</div>`:''}</section>`;
+}
+
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.5.5'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.6.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3050,7 +3166,7 @@ function runTick(){ if (!S || S.start > today()) return; const ev = tick(S); han
 function handleEvents(ev){
   for (const e of ev) {
     if (e.type==='level') QUEUE.push(e);
-    else if (e.type==='rank' || e.type==='boss' || e.type==='perfect' || e.type==='fug' || e.type==='mission' || e.type==='ach') QUEUE.push(e);
+    else if (e.type==='rank' || e.type==='boss' || e.type==='perfect' || e.type==='fug' || e.type==='mission' || e.type==='ach' || e.type==='gateClose') QUEUE.push(e);
     if (e.type==='rank') { for (const D of DESTS.filter(x=>x.rank===e.rank)) toast(`<b>Expediciones</b> Nuevo destino desbloqueado: ${esc(D.n)}.`, 'vio'); if (e.rank===3) toast('<b>Runas</b> Tercera ranura de runa desbloqueada.', 'vio'); }
     else if (e.type==='shUp') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} asciende a ${SH_RANKS[e.rank]}.`, 'vio');
     else if (e.type==='shDown') toast(`<b>Sombra</b> ${esc(SHADOWS[e.hid][0])} pierde un rango: se rompió la racha.`, 'red');
@@ -3537,11 +3653,8 @@ function screenTienda(){
     if (S.redeemed.length) html += `<section class="win"><div class="wh">${ic('laurel-crown')}<h2>Canjeadas</h2></div>${S.redeemed.slice().reverse().slice(0,20).map(r=>`<div class="hit"><span>${esc(r.n)}</span><span class="tiny">${dLabel(r.d)}</span></div>`).join('')}</section>`;
   } else {
     const ids = Object.keys(S.bag).filter(k=>S.bag[k]>0);
-    { petInit(S); const evs = Object.keys(EVENTS).filter(k=>(S.esq[k]||0)>0 || (S.ofr[k]||0)>0);
-      html += `<section class="win vio"><div class="wh" style="color:var(--vio)">${ic('egg-clutch')}<h2>Santuario</h2></div><div class="spread small"><span>${ic('round-potion')} Bayas Lunares</span><b>${S.bayas}</b></div><div class="spread small"><span>${ic('egg-clutch')} Huevos sin incubar</span><b>${S.eggs.length}</b></div>
-        ${evs.map(k=>`<div class="spread small"><span>${ic('crystal-shine')} ${esc(EVENTS[k].n)}: Esquirlas y Ofrendas</span><b>${S.esq[k]||0} · ${S.ofr[k]||0}</b></div>`).join('')}
-        <p class="tiny" style="margin:6px 0 0">Las Esquirlas (5 = 1 copia) y las Ofrendas (1 copia) solo sirven para la mascota de su evento: se usan al fusionarla en el Santuario.</p></section>`; }
-    html += `<section class="win">${ids.length?ids.map(id=>{ const it = SHOP.find(x=>x.id===id); return `<div class="shop-item"><div class="sic">${ic(it.ic)}</div><div class="info"><b>${esc(it.n)} × ${S.bag[id]}</b><small>${esc(it.d)}</small></div>${id==='cobre'?'<button class="btn sm vio" data-act="cobre">Usar</button>':''}</div>`; }).join(''):'<div class="empty">La bolsa está vacía. Compra escudos o pociones en Objetos.</div>'}
+    html += bagResources();
+    html += `<section class="win"><div class="wh">${ic('locked-chest')}<h2>Objetos</h2></div>${ids.length?ids.map(id=>{ const it = SHOP.find(x=>x.id===id); return `<div class="shop-item"><div class="sic">${ic(it.ic)}</div><div class="info"><b>${esc(it.n)} × ${S.bag[id]}</b><small>${esc(it.d)}</small></div>${id==='cobre'?'<button class="btn sm vio" data-act="cobre">Usar</button>':''}</div>`; }).join(''):'<div class="empty">No tienes objetos guardados. Se compran en el Bazar.</div>'}
       ${ids.length?`<button class="btn vio wide" data-act="usesheet" style="margin-top:10px">Usar un objeto</button>`:''}</section>
       <section class="win"><div class="wh">${ic('bottled-shadow')}<h2>Materiales</h2></div><p class="small" style="margin:0">Fragmentos de Sombra: <b>${S.frags}</b> · Llaves Rojas: <b>${S.keys}</b> · Esencia: <b>${S.ess}</b> · Núcleos: <b>${S.cores}</b></p></section>`;
   }
@@ -3601,7 +3714,7 @@ function cine(html, fx){
   document.body.appendChild(c); if (fx) particles(fx); setTimeout(()=>{ const b = c.querySelector('[data-act="cineok"]'); b && b.focus(); }, 50);
 }
 function showNext(){
-  if (SHOWING || !QUEUE.length) return; SHOWING = true; const e = QUEUE.shift();
+  if (SHOWING || !QUEUE.length || $('#gateov')) return; SHOWING = true; const e = QUEUE.shift();
   if (e.type==='level') { pushLog(S, 'Nivel '+e.lvl+'.'); cine(`<div class="burst"></div><div class="tiny" style="letter-spacing:.1em">Nivel</div><div class="big-num">${e.lvl}</div><div class="sysmsg" style="margin-top:18px">Has subido de nivel. +${e.gold} de oro y +${PTS_PER_LVL} puntos de estadística para repartir en Equipo.</div>`, {color:'sys', n:70}); }
   else if (e.type==='rank') { pushLog(S, 'Rango '+RANKS[e.rank]+'.'); cine(`<div class="emblem" style="--rk:${RANK_C[e.rank]}; width:120px; height:134px; margin:0 auto">${HEX}<b style="font-size:62px">${RANKS[e.rank]}</b></div><div class="sysmsg" style="margin-top:16px">Has ascendido a cazador de rango ${RANKS[e.rank]}. Las Puertas serán más duras… y el botín, mejor.</div>${lootCards(e.loot)}`, {color:'gold', n:120}); }
   else if (e.type==='boss') { const b = BOSS[e.w.bosses[0].id]; pushLog(S, 'Derrotaste a '+b.n+'.');
@@ -3614,6 +3727,7 @@ function showNext(){
   else if (e.type==='arise') { const [n,form,icn] = SHADOWS[e.hid]; pushLog(S, 'Sombra extraída: '+n+'.');
     cine(`<div class="arise-word">ARISE</div><div class="rise">${ic(icn)}</div><h3 style="font-family:var(--f-ep); font-size:22px; margin:6px 0">${esc(n)}</h3><div class="sysmsg" style="margin-top:12px; border-color:var(--vio)">Extracción completada. ${esc(n.split(',')[0])} se une a tu ejército como Soldado: +5 % de XP en ${esc(HB[e.hid].n.toLowerCase())}.</div>`, {color:'vio', n:220, smoke:true}); }
   else if (e.type==='red') { cine(e.win?`<div class="big-num red" style="font-size:36px">Puerta Roja superada</div>${lootCards(e.loot)}`:`<div class="big-num red" style="font-size:34px">La Puerta Roja se cierra</div><div class="sysmsg">No llegaste esta vez. Solo has perdido la llave.</div>`, {color:'red', n:100}); }
+  else if (e.type==='gateClose') { if (S.gateClosed && S.gateClosed[e.ws]) { SHOWING = false; return showNext(); } S.gateClosed = S.gateClosed||{}; S.gateClosed[e.ws] = 1; save(); showGate(gateCloseHTML(e.ws)); }
   else if (e.type==='ach') { pushLog(S, 'Logro: '+e.ids.map(id=>ACH[id].n).join(', ')+'.'); cine(achCine(e.ids), {color:'gold', n:150}); }
   else if (e.type==='mission') { const M = MISSION[e.m.id]; pushLog(S, 'Misión urgente completada: '+M.n+'.');
     cine(`<div class="big-num red" style="font-size:34px">Misión completada</div><div class="sysmsg" style="margin-top:14px; border-color:var(--red)">${esc(M.n)}. El Sistema reconoce tu esfuerzo.</div>${lootCards(e.loot)}`, {color:'red', n:120}); }
@@ -3787,6 +3901,7 @@ function act(name, v, el){
     case 'import': { try { const raw = $('#imp').value.trim().replace(/^ARISE1:/,''); const obj = JSON.parse(decodeURIComponent(escape(atob(raw)))); if (!obj || !obj.days) throw 0; S = obj; save(); closeSheet(); applyTheme(); render(); toast('<b>Sistema</b> Progreso restaurado.'); } catch(e){ toast('Código no válido. Comprueba que esté completo.','red'); } break; }
     case 'reset': openSheet(`<h3>¿Reiniciar el progreso?</h3><p class="small muted">Se borra todo: nivel, oro, equipo, sombras y jefes derrotados. Si quieres conservar una copia, usa antes «Copiar código» en el perfil.</p><div class="row" style="flex-wrap:wrap; margin-top:12px"><button class="btn primary red" data-act="resetok">Sí, borrar todo</button><button class="btn" data-act="profile">Cancelar</button></div>`); break;
     case 'resetok': { S = null; PEND = {}; QUEUE = []; TAB = 'hoy'; try{ localStorage.removeItem(LS); }catch(e){} if (DOC) DOC.set({s:'null', at:Date.now()}).catch(()=>{}); closeSheet(); render(); scrollTo({top:0}); break; }
+    case 'gateok': { const g = $('#gateov'); if (g) { g.classList.add('out'); setTimeout(()=>g.remove(), 450); } SHOWING = false; save(); setTimeout(()=>{ render(); showNext(); }, 460); break; }
     case 'cineok': { const c = $('#cine'); if (c) c.remove(); SHOWING = false; save(); render(); showNext(); break; }
   }
 }
@@ -3822,6 +3937,7 @@ function doToggle(hid){
 document.addEventListener('click', e=>{ const el = e.target.closest('[data-act]'); if (!el) return; if (el.disabled) return; e.preventDefault(); act(el.dataset.act, el.dataset.v || el.dataset.h, el); });
 document.addEventListener('keydown', e=>{ if (e.key==='Escape' && $('#sheet')) { closeSheet(); return; } if ((e.key==='Enter'||e.key===' ') && e.target.matches('.hrow')) { e.preventDefault(); act('tg', e.target.dataset.h, e.target); } });
 document.addEventListener('change', e=>{ const k = e.target.dataset.chg; if (!k || !S) return;
+  if (k==='sanf') { SANF = e.target.value; render(); return; }
   if (k==='portalcalc') { const c = $('#pcost'); if (c) c.textContent = nf(15*Number(e.target.value)); return; }
   if (k==='title') S.title = e.target.value; if (k==='theme') { S.theme = e.target.value; applyTheme(); } if (k==='name') S.name = e.target.value.trim() || S.name;
   save(); render(); });
