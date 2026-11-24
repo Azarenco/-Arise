@@ -1655,6 +1655,12 @@ function drawBoss(s, rank){
   }
   return s.bags[key].pop();
 }
+// Jefes Rezagados: los de rangos anteriores que nunca salieron aparecen antes que los del rango actual (uno por semana)
+function rezagado(s, rank){
+  if (rank < 1) return null; const seen = new Set(); for (const k in s.weeks) for (const b of (s.weeks[k].bosses||[])) seen.add(b.id);
+  const c = BOSSES.filter(b=>b.rank>=0 && b.rank<rank && !seen.has(b.id) && !(s.kills||{})[b.id]).sort((a,b)=>a.rank-b.rank);
+  if (!c.length) return null; const id = c[0].id; const bag = s.bags['r'+c[0].rank]; if (bag) { const i = bag.indexOf(id); if (i>=0) bag.splice(i,1); } return id;
+}
 function createWeek(s, ws, fug){
   const rank = curRank(s); const w = {ws, rank, theme:null, special:null, event:null, bosses:[], claimed:false, resolved:false};
   w.event = eventFor(ws);
@@ -1665,7 +1671,8 @@ function createWeek(s, ws, fug){
     if (!s.themeBag.length) s.themeBag = shuffle(Object.keys(THEMES));
     w.theme = s.themeBag.pop();
     if (w.special !== 'horda') {
-      w.bosses.push({id: fug ? fug.id : drawBoss(s,rank), fug: !!fug});
+      const rez = !fug && rezagado(s, rank);
+      w.bosses.push(rez ? {id: rez, rez: true} : {id: fug ? fug.id : drawBoss(s,rank), fug: !!fug});
       if (w.special==='doble') w.bosses.push({id: drawBoss(s,rank)});
       if (w.special==='elite') { const b = BOSS[w.bosses[0].id]; w.bosses[0].weak2 = pick(STATS.filter(x=>x!==b.weak)); }
     }
@@ -1725,7 +1732,7 @@ function hitDmg(s, d, hid, weak, w, stats, bid){
 }
 function battle(s, ws){
   const w = s.weeks[ws]; if (!w) return null;
-  const hps = bossHp(s,w); const bs = w.bosses.map((b,i)=>({id:b.id, hp:hps[i], dmg:0, dead:false, weak: BOSS[b.id].weak, weak2:b.weak2, fug:b.fug, asc:b.asc, trait:BOSS[b.id].trait, resist:BOSS[b.id].resist}));
+  const hps = bossHp(s,w); const bs = w.bosses.map((b,i)=>({id:b.id, hp:hps[i], dmg:0, dead:false, weak: BOSS[b.id].weak, weak2:b.weak2, fug:b.fug, rez:b.rez, asc:b.asc, trait:BOSS[b.id].trait, resist:BOSS[b.id].resist}));
   const stats = statsAll(s); const fxAll = allFx(s,null); const log = []; const st = settled();
   const cur = () => bs.find(b=>!b.dead);
   for (let i=0;i<7;i++){ const d = addD(ws,i); if (d < s.start || inEstasis(s,d)) continue; const dy = dayR(s,d);
@@ -3114,8 +3121,8 @@ const lootTxt = L => [L.gold?ic('two-coins')+nf(L.gold):'', L.ess?ic('chemical-d
 function gateOpenHTML(ws){
   const w = S.weeks[ws]; const b = battle(S, ws); const th = w.event ? EVENTS[w.event] : w.theme ? THEMES[w.theme] : null;
   const bosses = (b ? b.bosses : []).map(x=>{ const B = BOSS[x.id]; const m = bossMods(x.id);
-    return `<div class="go-boss"><div class="bport" style="width:76px; height:76px">${bossArt(B.ic)}</div><div style="text-align:left; min-width:0"><b>${esc(B.n)}${x.fug?' · Fugado':''}</b>
-      <small>Rango ${B.rank>=0?RANKS[B.rank]:'Evento'} · ${nf(x.hp)} de vida</small>
+    return `<div class="go-boss"><div class="bport" style="width:76px; height:76px">${bossArt(B.ic)}</div><div style="text-align:left; min-width:0"><b>${esc(B.n)}${x.fug?' · Fugado':''}${x.rez?' · Rezagado':''}</b>
+      <small>${x.rez?`Jefe de rango ${RANKS[B.rank]} que se te escapó · con fuerza de rango ${RANKS[w.rank]}`:`Rango ${B.rank>=0?RANKS[B.rank]:'Evento'}`} · ${nf(x.hp)} de vida</small>
       <div class="chips" style="margin-top:4px">${B.weak?`<span class="chip" style="color:var(--ok)">Débil a ${B.weak}</span>`:''}${m.res?`<span class="chip" style="color:var(--red)">Resiste ${m.res}</span>`:''}${m.tr?`<span class="chip" style="color:var(--gold)">${TRAIT_N[m.tr]}</span>`:''}</div></div></div>`; }).join('');
   const sp = w.special && SPECIALS[w.special];
   return `<div class="gate-ov open" id="gateov"><div class="go-portal"></div><div class="go-in">
@@ -3208,7 +3215,7 @@ function wallet(keys){
   wrap('petSheet', ['bayas']); wrap('itemSheet', ['gold','ess','cores']); wrap('shadowSheet', ['frags']); wrap('runeSheet', ['elixir']); wrap('expSheet', ['compass','retirada']); }
 
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.7.4'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.7.5'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3326,7 +3333,7 @@ function bossStrip(d){
     return `<div class="bstrip" id="bstrip"><div class="bport">${bossArt('tentacles-skull')}</div><div class="binfo"><b>Puerta de Horda</b><div class="hp"><i style="width:${n/7*100}%"></i><span>${n} / 7 salas</span></div></div></div>`; }
   const hide = w.special==='laberinto' && dow(today())<4 && wstart(today())===ws;
   return `<div class="bstrip" id="bstrip" data-act="tab" data-v="puerta">${b.bosses.map(x=>{ const bo = BOSS[x.id]; const left = Math.max(0, x.hp - x.dmg);
-    return `<div class="bport">${bossArt(bo.ic, x.dead)}</div><div class="binfo"><b>${esc(bo.n)}${x.fug?' · Fugado':''}</b>
+    return `<div class="bport">${bossArt(bo.ic, x.dead)}</div><div class="binfo"><b>${esc(bo.n)}${x.fug?' · Fugado':''}${x.rez?' · Rezagado':''}</b>
       <div class="hp seg10"><i class="lag" style="width:${hide?100:left/x.hp*100}%"></i><i style="width:${hide?100:left/x.hp*100}%"></i><span>${hide?'???':x.dead?'Derrotado':nf(left)+' / '+nf(x.hp)}</span></div></div>`; }).join('')}</div>`;
 }
 function hoyTabs(){
