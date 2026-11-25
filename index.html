@@ -835,6 +835,22 @@ main{padding:4px 14px 20px}
 .syn-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px} .syn{padding:8px 10px; border:1px solid color-mix(in srgb, #4fd2c8 45%, var(--line)); background:color-mix(in srgb, #4fd2c8 6%, var(--panel))} .syn b{display:block; font-size:13.5px} .syn small{display:block; font-size:11px; color:var(--tx2)} .syn .tiny{color:#4fd2c8}
 .syn.unk{border-color:var(--line); background:var(--panel)} .syn.unk b{color:var(--tx3)} .syn.unk .tiny{color:var(--tx3)}
 .synact{display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 12px} .synact .chip{color:#4fd2c8; border-color:color-mix(in srgb, #4fd2c8 50%, var(--line))}
+
+/* v2.10 · golpes por hábito y récords */
+.ghs{display:grid; gap:2px} .gh summary{display:grid; grid-template-columns:22px minmax(0,1fr) 30% 52px; align-items:center; gap:8px; padding:7px 2px; cursor:pointer; list-style:none; font-size:13px; border-top:1px solid var(--line)} .gh summary::-webkit-details-marker{display:none}
+.gh:first-child summary{border-top:0} .gh-ic .ic{font-size:18px; color:var(--sys)} .gh-n{overflow:hidden; text-overflow:ellipsis; white-space:nowrap} .gh summary b, .gd b{text-align:right; font-variant-numeric:tabular-nums}
+.gh.zero{opacity:.5} .gh[open] summary{color:var(--sys)}
+.gh-bar{height:6px; background:color-mix(in srgb, var(--sys) 12%, transparent); position:relative} .gh-bar i{position:absolute; inset:0 auto 0 0; background:var(--sys)}
+.gh-days{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:4px 0 10px 30px}
+.gh-days span{display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 2px; border:1px solid var(--line); font-variant-numeric:tabular-nums} .gh-days small{font-size:10px; color:var(--tx3)} .gh-days b{font-size:12px}
+.gh-days span.crit{border-color:var(--gold); background:color-mix(in srgb, var(--gold) 12%, transparent)} .gh-days span.crit b{color:var(--gold)} .gh-days i{font-style:normal; font-size:8.5px; color:var(--gold); white-space:nowrap}
+.gh-days span.fut{opacity:.35}
+.gsep{border-top:2px dotted color-mix(in srgb, var(--sys) 45%, var(--line)); margin:12px 0 4px}
+.gds{display:grid; gap:2px} .gd{display:grid; grid-template-columns:110px minmax(0,1fr) 60px; align-items:center; gap:8px; padding:6px 2px; font-size:13px; text-transform:capitalize} .gd.fut{opacity:.4} .gd .rg{grid-column:1/-1; font-size:11px; color:var(--ok); text-transform:none; margin-top:-4px}
+.recs{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.rec{position:relative; display:flex; flex-direction:column; gap:1px; padding:10px; border:1px solid color-mix(in srgb, var(--rc) 40%, var(--line)); background:color-mix(in srgb, var(--rc) 7%, var(--panel))}
+.rec-ic .ic{font-size:20px; color:var(--rc)} .rec small{font-size:11px; color:var(--tx2)} .rec b{font-family:var(--f-ep); font-size:20px; color:var(--rc); font-variant-numeric:tabular-nums} .rec .tiny{font-size:10.5px}
+.rec.new{box-shadow:0 0 14px color-mix(in srgb, var(--rc) 45%, transparent)} .rec em{position:absolute; top:6px; right:6px; font-style:normal; font-size:10px; font-weight:800; color:#1a1200; background:var(--gold); padding:1px 6px}
 </style>
 </head>
 <body>
@@ -3472,8 +3488,60 @@ function synCodex(){ const seen = S.synSeen || {}; const n = Object.keys(seen).l
 function synChips(){ const act = activeSyns(S); if (!act.length) return ''; noteSyns(S);
   return `<div class="synact">${act.map(y=>`<span class="chip">${ic('linked-rings')} <b>${esc(y.n)}</b> · ${esc(y.d.includes(':')?y.d.split(':').slice(1).join(':').trim():y.d)}</span>`).join('')}</div>`; }
 
+// ===================== ARISE v2.10 · GOLPES POR HÁBITO Y RÉCORDS DEL CAZADOR =====================
+// ---- Golpes de la semana: por hábito (desplegable) y por día ----
+function golpesSection(b, ws){
+  const days = [0,1,2,3,4,5,6].map(i=>addD(ws,i)); const per = {}; const perDay = days.map(()=>0); let regen = days.map(()=>0);
+  for (const x of b.log) { const i = days.indexOf(x.d); if (i < 0) continue;
+    if (!x.hid) { regen[i] += x.heal||0; continue; }
+    const h = x.hid.split(':')[0]; const r = per[h] = per[h] || {tot:0, d:days.map(()=>({dmg:0, crit:false, res:false, n:0}))};
+    r.tot += x.dmg; const c = r.d[i]; c.dmg += x.dmg; c.n++; if (x.crit) c.crit = true; if (x.res) c.res = true; perDay[i] += x.dmg; }
+  const order = HABITS.map(h=>h.id).sort((a,c)=>((per[c]||{}).tot||0)-((per[a]||{}).tot||0));
+  const max = Math.max(1, ...Object.values(per).map(r=>r.tot)); const maxD = Math.max(1, ...perDay); const t = today();
+  const rows = order.map(id=>{ const h = HB[id]; const r = per[id]; const tot = r ? r.tot : 0;
+    return `<details class="gh ${tot?'':'zero'}"><summary><span class="gh-ic">${ic(h.ic)}</span><span class="gh-n">${esc(h.n)}</span><span class="gh-bar"><i style="width:${tot/max*100}%"></i></span><b>${tot?nf(tot):'0'}</b></summary>
+      <div class="gh-days">${days.map((d,i)=>{ const c = r ? r.d[i] : null; const fut = d > t;
+        return `<span class="${c&&c.crit?'crit':''} ${fut?'fut':''}"><small>${'DLMXJVS'[dparse(d).getDay()]}</small><b>${fut?'·':c&&c.dmg?nf(c.dmg):'0'}</b>${c&&c.crit?'<i>⚡ crítico</i>':c&&c.res?'<i>resistido</i>':''}</span>`; }).join('')}</div></details>`; }).join('');
+  const dayRows = days.map((d,i)=>{ const fut = d > t; return `<div class="gd ${fut?'fut':''}"><span>${esc(dLabel(d).split(' ').slice(0,2).join(' '))}</span><span class="gh-bar"><i style="width:${perDay[i]/maxD*100}%"></i></span><b>${fut?'—':nf(perDay[i])}</b>${regen[i]?`<small class="rg">+${nf(regen[i])} regenera</small>`:''}</div>`; }).join('');
+  const any = Object.keys(per).length;
+  return `<section class="win"><div class="wh">${ic('crossed-swords')}<h2>Golpes de la semana</h2></div>
+    ${any ? `<div class="tier-h"><h3>Por hábito</h3><span class="tiny">Toca para ver cada día</span></div><div class="ghs">${rows}</div><div class="gsep"></div><div class="tier-h"><h3>Por día</h3></div><div class="gds">${dayRows}</div>` : '<div class="empty">Aún no has golpeado. Marca un hábito en Misiones.</div>'}</section>`;
+}
+
+// ---- Récords del Cazador (en la Crónica) ----
+function records(){
+  const t = today(); const yest = addD(t,-1); const R = {};
+  const put = (k, v, d, extra) => { if (v > 0 && (!R[k] || v > R[k].v)) R[k] = {v, d, extra}; };
+  for (const ws of Object.keys(S.weeks).sort()) { const b = battle(S, ws); if (!b) continue; const byDay = {};
+    for (const x of b.log) { if (!x.hid) continue; byDay[x.d] = (byDay[x.d]||0) + x.dmg; put('hit', x.dmg, x.d, HB[x.hid.split(':')[0]].n + (x.crit?' · crítico':'')); }
+    for (const d in byDay) put('day', byDay[d], d);
+    const w = S.weeks[ws]; if (w.resolved || ws < wstart(t)) { const x = weekSummary(S, ws);
+      put('xp', x.xp, ws, weekLabelShort(ws)); put('pct', x.pct, ws, weekLabelShort(ws));
+      if (x.result==='muerto' && x.deadOn) { const days = Math.round((dparse(x.deadOn)-dparse(ws))/864e5)+1; if (!R.fast || days < R.fast.v) R.fast = {v:days, d:x.deadOn, extra:BOSS[w.bosses[0].id].n}; } }
+    const W = (S.wl||{})[ws]; if (W) { let g = 0; for (const k in W) g += W[k].gold||0; put('gold', g, ws, weekLabelShort(ws)); } }
+  // racha de días perfectos y de salas limpias
+  let run = 0, best = 0, bestEnd = null, rr = 0, rbest = 0, rEnd = null;
+  for (let d = S.start; d <= yest; d = addD(d,1)) { if (inEstasis(S,d)) continue;
+    if (DAILY.every(h=>fullDone(S,d,h.id))) { run++; if (run > best) { best = run; bestEnd = d; } } else run = 0;
+    if (roomClear(S,d)) { rr++; if (rr > rbest) { rbest = rr; rEnd = d; } } else rr = 0; }
+  if (best) R.streak = {v:best, d:bestEnd}; if (rbest) R.rooms = {v:rbest, d:rEnd};
+  const fresh = d => d && (d >= addD(t,-1));
+  const card = (k, icn, col, title, fmt, sub) => { const r = R[k]; return `<div class="rec ${r && fresh(r.d) ? 'new' : ''}" style="--rc:${col}"><span class="rec-ic">${ic(icn)}</span><small>${title}</small><b>${r ? fmt(r.v) : '—'}</b><span class="tiny">${r ? esc(sub(r)) : 'Aún sin marca'}</span>${r && fresh(r.d) ? '<em>¡Nuevo!</em>' : ''}</div>`; };
+  const dl = d => dLabel(d).split(' ').slice(0,4).join(' ');
+  return `<section class="win"><div class="wh">${ic('laurel-crown')}<h2>Récords del Cazador</h2></div><div class="recs">
+    ${card('day','crossed-swords','#ff8a3d','Más daño en un día', v=>nf(v), r=>dl(r.d))}
+    ${card('hit','lightning-storm','#ffd65c','Golpe más fuerte', v=>nf(v), r=>r.extra+' · '+dl(r.d))}
+    ${card('fast','run','#ff5f7a','Jefe más rápido', v=>v===1?'1 día':v+' días', r=>r.extra)}
+    ${card('streak','laurel-crown','#3ddc97','Racha de días perfectos', v=>v===1?'1 día':v+' días', r=>'hasta el '+dl(r.d))}
+    ${card('rooms','locked-chest','#4fd2c8','Salas limpias seguidas', v=>nf(v), r=>'hasta el '+dl(r.d))}
+    ${card('xp','upgrade','#5cb8ff','Más XP en una semana', v=>nf(v), r=>r.extra)}
+    ${card('gold','two-coins','#f4c652','Más oro en una semana', v=>nf(v), r=>r.extra)}
+    ${card('pct','sundial','#a98bff','Mejor % semanal', v=>v+' %', r=>r.extra)}
+  </div></section>`;
+}
+
 // ===================== ARISE · INTERFAZ =====================
-let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.9.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
+let HOYT = 'dia', GATET = 'puerta'; const APP_VERSION = '2.10.0'; let PEND = {}; let S = null, TAB = 'hoy', VIEWDAY = null, INVF = 'todo', SHOPT = 'obj', QUEUE = [], SHOWING = false;
 const $ = (q, el=document) => el.querySelector(q);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic = (n, cls='') => ICONS[n] ? `<svg class="ic ${cls}" viewBox="0 0 512 512" aria-hidden="true"><path d="${ICONS[n]}"/></svg>` : '';
@@ -3779,8 +3847,7 @@ function screenPuerta(){
       <div><b class="rname" style="--rc:var(--c-${it.r})">${esc(it.n)}</b><div class="tiny">${killed?'Ya la tienes: ahora cae con un 15 %':'Pieza firma garantizada la primera vez'}</div><div class="small muted">${esc(it.d)}</div></div></div>
       <p class="small muted" style="margin:10px 0 0">Además: ~${nf(30*(w.rank+1)*(b.bosses[0].fug?2:1))} de oro, 1-3 Núcleos y una pieza al azar.</p></section>`;
   }
-  const hits = []; { let last = null; for (const x of b.log.slice().reverse()) { if (x.d !== last) { hits.push({sep:x.d}); last = x.d; } hits.push(x); } }
-  html += `<section class="win"><div class="wh">${ic('crossed-swords')}<h2>Golpes de la semana</h2></div>${hits.length?`<div class="hits">${hits.map(x=> x.sep ? `<div class="hitsep">${esc(dLabel(x.sep))}</div>` : x.hid ? `<div class="hit ${x.crit?'c':''}"><span>${esc(HB[x.hid].n)} <span class="tiny">${DOWN[dparse(x.d).getDay()]}${x.res?' · resistido':''}</span></span><b>−${nf(x.dmg)}${x.crit?' crítico':''}</b></div>` : `<div class="hit"><span>Regeneración <span class="tiny">${DOWN[dparse(x.d).getDay()]} · sala sin limpiar</span></span><b style="color:var(--ok)">+${nf(x.heal)}</b></div>`).join('')}</div>`:'<div class="empty">Aún no has golpeado. Marca un hábito en Hoy.</div>'}</section>`;
+  html += golpesSection(b, ws);
   html += `<div class="row" style="justify-content:center; margin:12px 0"><button class="btn" data-act="bestiary">${ic('book-cover')}Bestiario</button></div>`;
   return html;
 }
@@ -3819,6 +3886,7 @@ function screenCronica(){
     <div><b>${perf}</b><small>${perf===1?'semana perfecta':'semanas perfectas'}</small></div><div><b>${avg===null?'—':avg+' %'}</b><small>media cerrada</small></div></div>
     <div class="chron-chart" role="img" aria-label="Cumplimiento de las últimas semanas">${last.map(x=>`<div class="cbar"><span class="cv">${x.pct}%</span><i style="height:${Math.max(4,x.pct)}%; background:${col(x)}; box-shadow:0 0 10px ${col(x)}"></i><small>${shortWeek(x.ws)}</small></div>`).join('')}</div>
     <div class="chips" style="margin-top:8px; justify-content:center"><span class="chip"><i class="lg" style="background:var(--gold)"></i>Jefe derrotado</span><span class="chip"><i class="lg" style="background:var(--red)"></i>Escapó</span><span class="chip"><i class="lg" style="background:var(--sys)"></i>En curso</span></div></section>`;
+  h += records();
   let shownClosed = false;
   for (const x of sums) { const w = x.w;
     if (x.result==='curso' && x.cur) h += `<div class="sec-h" style="color:var(--red)">${ic('portal')} Grieta activa</div>`;
@@ -4255,7 +4323,7 @@ function act(name, v, el){
       if (v==='pets') { petInit(S); const mk = (P, stage, extra) => Object.assign({uid:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), id:P.id, stage, food:[0,20,80][stage], stars:0}, extra||{});
         const by = r => PETS.filter(p=>p.rar===r && !p.ev);
         const add = [mk(pick(by('c')),0), mk(pick(by('r')),1), mk(pick(by('e')),2,{shiny:true, stars:2}), mk(pick(PETS.filter(p=>p.ev)),1,{stars:1})];
-        S.pets.push(...add); S.petAct = add.slice(0, petSlots(S)).map(p=>p.uid); toast('<b>Pruebas</b> 4 mascotas añadidas (cría, joven, adulta brillante y de evento).', 'vio'); }
+        S.pets.push(...add); S.codex = S.codex||{}; for (const p of add) { S.codex[p.id] = S.codex[p.id]||today(); if (p.shiny) S.codex[p.id+'*'] = S.codex[p.id+'*']||today(); } S.petAct = add.slice(0, petSlots(S)).map(p=>p.uid); toast('<b>Pruebas</b> 4 mascotas añadidas (cría, joven, adulta brillante y de evento).', 'vio'); }
       if (v==='eggs') { petInit(S); for (const g of [pick(EGG_ORDER), pick(EGG_ORDER), 'evento']) addEgg(S, g, g==='evento' ? pick(Object.keys(EVENTS)) : null);
         if ((S.inc||[]).length < 2) { addEgg(S, pick(EGG_ORDER)); const e = S.eggs.pop(); S.inc.push(Object.assign(e, {start:today(), bonus:99})); }
         toast('<b>Pruebas</b> 3 huevos en el Redil y 1 listo para eclosionar en la Incubadora.', 'vio'); }
@@ -4324,7 +4392,7 @@ document.addEventListener('change', e=>{ const k = e.target.dataset.chg; if (!k 
 // Lo que se sortea al pintar (Oferta del día, Mercader) se guarda al momento
 const _renderBase = render; render = function(){ _renderBase(); tintWins(); if (S && S.dirty) { delete S.dirty; save(); } };
 // 'azul' = se queda con el azul del Sistema
-const SEC_C = {'Imprevistos':'#a98bff', 'Misión urgente':'var(--red)', 'Tablón del Sistema':'var(--gold)', 'Yunque':'#ff8a3d', 'Runas':'#4fd2c8', 'Mascotas':'#a98bff', 'Diarios de la semana':'#4fd2c8', 'Salas de la semana':'azul', 'Botín':'#f4c652', 'Golpes de la semana':'azul', 'Incubadora':'azul', 'Redil':'#4fd2c8', 'Inventario':'#ffb35c', 'Estadísticas':'azul', 'Cómo funcionan':'#a98bff', 'Habilidades':'#4fd2c8', 'Recursos':'#f4c652', 'Objetos':'azul', 'Catálogo del Sistema':'azul', 'Bonus de set':'#ff8a3d', 'Destinos':'#a98bff', 'Equipo activo':'azul', 'Evolución semanal':'azul'};
+const SEC_C = {'Récords del Cazador':'var(--gold)', 'Imprevistos':'#a98bff', 'Misión urgente':'var(--red)', 'Tablón del Sistema':'var(--gold)', 'Yunque':'#ff8a3d', 'Runas':'#4fd2c8', 'Mascotas':'#a98bff', 'Diarios de la semana':'#4fd2c8', 'Salas de la semana':'azul', 'Botín':'#f4c652', 'Golpes de la semana':'azul', 'Incubadora':'azul', 'Redil':'#4fd2c8', 'Inventario':'#ffb35c', 'Estadísticas':'azul', 'Cómo funcionan':'#a98bff', 'Habilidades':'#4fd2c8', 'Recursos':'#f4c652', 'Objetos':'azul', 'Catálogo del Sistema':'azul', 'Bonus de set':'#ff8a3d', 'Destinos':'#a98bff', 'Equipo activo':'azul', 'Evolución semanal':'azul'};
 const SEC_PAL = ['#5cb8ff','#3ddc97','#ffb35c','#ff7a9a','#a98bff','#4fd2c8','#f4c652','#ff8a3d'];
 function tintWins(){
   document.querySelectorAll('.win > .wh').forEach(wh=>{ const w = wh.parentElement; let c = wh.style.color;
